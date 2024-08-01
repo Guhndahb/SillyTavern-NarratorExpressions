@@ -427,95 +427,99 @@ const findImage = async(name) => {
 const updateMembers = async()=>{
     if (busy) return;
     busy = true;
-    const context = getContext();
-    const names = [];
-    if (csettings.members?.length) {
-        const members = getOrderFromText(csettings.members);
-        names.push(...members);
-        names.push(...csettings.members.filter(m=>!names.find(it=>it == m)));
-    } else if (groupId) {
-        const group = context.groups.find(it=>it.id == groupId);
-        const members = group.members.map(m=>characters.find(c=>c.avatar == m)).filter(it=>it);
-        names.push(...getOrder(members.map(it=>it.name)).filter(it=>csettings.exclude?.indexOf(it.toLowerCase()) == -1));
-        names.push(...members.filter(m=>!names.find(it=>it == m.name)).map(it=>it.name).filter(it=>csettings.exclude?.indexOf(it.toLowerCase()) == -1));
-    } else {
-        names.push(characters[context.characterId].name);
-    }
-    const removed = nameList.filter(it=>names.indexOf(it) == -1);
-    const added = names.filter(it=>nameList.indexOf(it) == -1);
-    for (const name of removed) {
-        nameList.splice(nameList.indexOf(name), 1);
-        let idx = imgs.findIndex(it=>it.getAttribute('data-character') == name);
-        const img = imgs.splice(idx, 1)[0];
-        idx = left.indexOf(name);
-        if (idx > -1) {
-            left.splice(idx, 1);
+    try {
+        const context = getContext();
+        const names = [];
+        if (csettings.members?.length) {
+            const members = getOrderFromText(csettings.members);
+            names.push(...members);
+            names.push(...csettings.members.filter(m=>!names.find(it=>it == m)));
+        } else if (groupId) {
+            const group = context.groups.find(it=>it.id == groupId);
+            const members = group.members.map(m=>characters.find(c=>c.avatar == m)).filter(it=>it);
+            names.push(...getOrder(members.map(it=>it.name)).filter(it=>csettings.exclude?.indexOf(it.toLowerCase()) == -1));
+            names.push(...members.filter(m=>!names.find(it=>it == m.name)).map(it=>it.name).filter(it=>csettings.exclude?.indexOf(it.toLowerCase()) == -1));
         } else {
-            idx = right.indexOf(name);
+            names.push(characters[context.characterId].name);
+        }
+        const removed = nameList.filter(it=>names.indexOf(it) == -1);
+        const added = names.filter(it=>nameList.indexOf(it) == -1);
+        for (const name of removed) {
+            nameList.splice(nameList.indexOf(name), 1);
+            let idx = imgs.findIndex(it=>it.getAttribute('data-character') == name);
+            const img = imgs.splice(idx, 1)[0];
+            idx = left.indexOf(name);
             if (idx > -1) {
-                right.splice(idx, 1);
+                left.splice(idx, 1);
             } else {
-                current = null;
+                idx = right.indexOf(name);
+                if (idx > -1) {
+                    right.splice(idx, 1);
+                } else {
+                    current = null;
+                }
+            }
+            img.classList.add('stge--exit');
+            await delay(settings.transition + 150);
+            img.remove();
+        }
+        const purgatory = [];
+        while (settings.numLeft != -1 && left.length > settings.numLeft) {
+            purgatory.push(left.pop());
+        }
+        while (settings.numRight != -1 && right.length > settings.numRight) {
+            purgatory.push(right.pop());
+        }
+        for (const name of added) {
+            nameList.push(name);
+            if (!current) {
+                current = name;
+            } else if ((left.length < settings.numLeft || settings.numLeft == -1) && (left.length <= right.length || right.length >= settings.numRight)) {
+                left.push(name);
+            } else if (right.length < settings.numRight || settings.numRight == -1) {
+                right.push(name);
+            }
+            const wrap = document.createElement('div'); {
+                imgs.push(wrap);
+                wrap.classList.add('stge--wrapper');
+                wrap.setAttribute('data-character', name);
+                const img = document.createElement('img'); {
+                    img.classList.add('stge--img');
+                    const tc = chat_metadata.triggerCards ?? {};
+                    img.src = await findImage(tc?.costumes?.[name] ?? name);
+                    wrap.append(img);
+                }
             }
         }
-        img.classList.add('stge--exit');
-        await delay(settings.transition + 150);
-        img.remove();
-    }
-    const purgatory = [];
-    while (settings.numLeft != -1 && left.length > settings.numLeft) {
-        purgatory.push(left.pop());
-    }
-    while (settings.numRight != -1 && right.length > settings.numRight) {
-        purgatory.push(right.pop());
-    }
-    for (const name of added) {
-        nameList.push(name);
-        if (!current) {
-            current = name;
-        } else if ((left.length < settings.numLeft || settings.numLeft == -1) && (left.length <= right.length || right.length >= settings.numRight)) {
-            left.push(name);
-        } else if (right.length < settings.numRight || settings.numRight == -1) {
-            right.push(name);
-        }
-        const wrap = document.createElement('div'); {
-            imgs.push(wrap);
-            wrap.classList.add('stge--wrapper');
-            wrap.setAttribute('data-character', name);
-            const img = document.createElement('img'); {
-                img.classList.add('stge--img');
-                const tc = chat_metadata.triggerCards ?? {};
-                img.src = await findImage(tc?.costumes?.[name] ?? name);
-                wrap.append(img);
+        for (const name of purgatory) {
+            if (!current) {
+                current = name;
+            } else if ((left.length < settings.numLeft || settings.numLeft == -1) && (left.length <= right.length || right.length >= settings.numRight)) {
+                left.push(name);
+            } else if (right.length < settings.numRight || settings.numRight == -1) {
+                right.push(name);
+            } else {
+                const wrap = imgs.find(it=>it.getAttribute('data-character') == name);
+                if (wrap) {
+                    wrap.classList.add('stge--exit');
+                    await delay(settings.transition + 150);
+                    wrap.remove();
+                }
             }
         }
-    }
-    for (const name of purgatory) {
-        if (!current) {
-            current = name;
-        } else if ((left.length < settings.numLeft || settings.numLeft == -1) && (left.length <= right.length || right.length >= settings.numRight)) {
-            left.push(name);
-        } else if (right.length < settings.numRight || settings.numRight == -1) {
-            right.push(name);
-        } else {
-            const wrap = imgs.find(it=>it.getAttribute('data-character') == name);
-            if (wrap) {
-                wrap.classList.add('stge--exit');
-                await delay(settings.transition + 150);
-                wrap.remove();
+        const queue = nameList.filter(it=>left.indexOf(it)==-1 && right.indexOf(it) == -1 && it != current);
+        while (queue.length > 0 && (settings.numLeft == -1 || settings.numRight == -1 || left.length < settings.numLeft || right.length < settings.numRight || !current)) {
+            const name = queue.pop();
+            if (!current) {
+                current = name;
+            } else if ((left.length < settings.numLeft || settings.numLeft == -1) && (left.length <= right.length || right.length >= settings.numRight)) {
+                left.push(name);
+            } else if (right.length < settings.numRight || settings.numRight == -1) {
+                right.push(name);
             }
         }
-    }
-    const queue = nameList.filter(it=>left.indexOf(it)==-1 && right.indexOf(it) == -1 && it != current);
-    while (queue.length > 0 && (settings.numLeft == -1 || settings.numRight == -1 || left.length < settings.numLeft || right.length < settings.numRight || !current)) {
-        const name = queue.pop();
-        if (!current) {
-            current = name;
-        } else if ((left.length < settings.numLeft || settings.numLeft == -1) && (left.length <= right.length || right.length >= settings.numRight)) {
-            left.push(name);
-        } else if (right.length < settings.numRight || settings.numRight == -1) {
-            right.push(name);
-        }
+    } catch (ex) {
+        console.error('[GE]', ex);
     }
     busy = false;
 };
