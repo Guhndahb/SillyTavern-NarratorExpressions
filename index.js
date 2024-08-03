@@ -523,9 +523,9 @@ const updateMembers = async()=>{
     }
     busy = false;
 };
-eventSource.on(event_types.CHAT_CHANGED, ()=>chatChanged());
+eventSource.on(event_types.CHAT_CHANGED, ()=>(chatChanged(),null));
 eventSource.on(event_types.GROUP_UPDATED, (...args)=>groupUpdated(...args));
-eventSource.on(event_types.GROUP_UPDATED, ()=>updateMembers());
+eventSource.on(event_types.GROUP_UPDATED, ()=>(updateMembers(),null));
 // eventSource.on(event_types.USER_MESSAGE_RENDERED, ()=>messageRendered());
 
 
