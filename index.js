@@ -412,9 +412,9 @@ const messageRendered = async () => {
 
 
 
-const findImage = async(name) => {
+const findImage = async(name, expression = null) => {
     for (const ext of settings.extensions) {
-        const url = `/characters/${name}/${settings.expression}.${ext}`;
+        const url = `/characters/${name}/${expression ?? settings.expression}.${ext}`;
         const resp = await fetch(url, {
             method: 'HEAD',
             headers: getRequestHeaders(),
@@ -617,7 +617,7 @@ const end = ()=>{
 const init = ()=>{
     log('init');
     initSettings();
-    mo = new MutationObserver(muts=>{
+    mo = new MutationObserver(async(muts)=>{
         if (busy) return;
         const lastCharMes = chat.toReversed().find(it=>!it.is_user && !it.is_system && nameList.find(o=>it.name == o));
         const img = imgs.find(it=>it.getAttribute('data-character') == lastCharMes?.name);
@@ -627,7 +627,8 @@ const init = ()=>{
             const name = parts[parts.indexOf('characters')+1];
             const img = imgs.find(it=>it.getAttribute('data-character') == name)?.querySelector('.stge--img');
             if (img) {
-                img.src = src;
+                const tc = chat_metadata.triggerCards ?? {};
+                img.src = await findImage(tc?.costumes?.[name] ?? name, parts.slice(-1)[0].replace(/^(.+)\.[^.]+$/, '$1'));
             }
         }
     });
