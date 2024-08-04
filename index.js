@@ -1,9 +1,9 @@
-import { characters, chat, chat_metadata, eventSource, event_types, getRequestHeaders, saveSettingsDebounced } from '../../../../script.js';
+import { characters, chat, chat_metadata, eventSource, event_types, getRequestHeaders, saveSettingsDebounced, substituteParams } from '../../../../script.js';
 import { extension_settings, getContext, saveMetadataDebounced } from '../../../extensions.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
-import { delay, escapeRegex } from '../../../utils.js';
+import { delay, escapeRegex, isTrueBoolean } from '../../../utils.js';
 
 const log = (...msg) => console.log('[GE]', ...msg);
 /**
@@ -303,7 +303,8 @@ const chatChanged = async ()=>{
 
     csettings = Object.assign({
         exclude: [],
-        members : [],
+        members: [],
+        emotes: {},
     }, chat_metadata.groupExpressions ?? {});
     chat_metadata.groupExpressions = csettings;
     log(chat_metadata);
@@ -423,6 +424,9 @@ const findImage = async(name, expression = null) => {
             return url;
         }
     }
+    if (expression != settings.expression) {
+        return await findImage(name);
+    }
 };
 const updateMembers = async()=>{
     if (busy) return;
@@ -486,7 +490,7 @@ const updateMembers = async()=>{
                 const img = document.createElement('img'); {
                     img.classList.add('stge--img');
                     const tc = chat_metadata.triggerCards ?? {};
-                    img.src = await findImage(tc?.costumes?.[name] ?? name);
+                    img.src = await findImage(tc?.costumes?.[name] ?? name, csettings[name]?.emote);
                     wrap.append(img);
                 }
             }
@@ -624,7 +628,8 @@ const init = ()=>{
         if (img && document.querySelector('#expression-image').src) {
             const src = document.querySelector('#expression-image').src;
             const parts = src.split('/');
-            const name = parts[parts.indexOf('characters')+1];
+            const name = parts[parts.indexOf('characters') + 1];
+            if (csettings.emotes[name]?.isLocked) return;
             const img = imgs.find(it=>it.getAttribute('data-character') == name)?.querySelector('.stge--img');
             if (img) {
                 const tc = chat_metadata.triggerCards ?? {};
@@ -670,6 +675,73 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'ge-members',
             <ul>
                 <li><pre><code class="language-stscript">/ge-members ["Alice", "Bob"]</code></pre></li>
                 <li><pre><code class="language-stscript">/ge-members | /echo</code></pre></li>
+            </ul>
+        </div>
+    `,
+}));
+
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'ge-emote',
+    /**
+     * @param {{name:string, lock:string, clear:string}} args
+     * @param {string} value
+     */
+    callback: async(args, value)=>{
+        const name = args.name ?? substituteParams('{{char}}');
+        if (isTrueBoolean(args.clear)) {
+            delete csettings.emotes[name];
+            saveMetadataDebounced();
+            return '';
+        }
+        if (value?.length) {
+            csettings.emotes[name] = {
+                emote: value,
+                isLocked: isTrueBoolean(args.lock ?? 'false'),
+            };
+            saveMetadataDebounced();
+            const img = imgs.find(it=>it.getAttribute('data-character') == name)?.querySelector('.stge--img');
+            if (img) {
+                const tc = chat_metadata.triggerCards ?? {};
+                img.src = await findImage(tc?.costumes?.[name] ?? name, value);
+            }
+        }
+        const result = csettings.emotes[name];
+        if (result) return JSON.stringify(result);
+        return '';
+    },
+    namedArgumentList: [
+        SlashCommandNamedArgument.fromProps({ name: 'name',
+            description: 'name of the member',
+            defaultValue: '{{char}}',
+        }),
+        SlashCommandNamedArgument.fromProps({ name: 'lock',
+            description: 'true: emote cannot be automatically changed by expressions extension',
+            typeList: [ARGUMENT_TYPE.BOOLEAN],
+            defaultValue: 'false',
+        }),
+        SlashCommandNamedArgument.fromProps({ name: 'clear',
+            description: 'true: remove the manually set emote',
+            typeList: [ARGUMENT_TYPE.BOOLEAN],
+            defaultValue: 'false',
+        }),
+    ],
+    unnamedArgumentList: [
+        SlashCommandArgument.fromProps({ description: 'expression',
+        }),
+    ],
+    returns: 'current emote',
+    helpString: `
+        <div>
+            Set the emote / expression for a member.
+        </div>
+        <div>
+            Leave the unnamed argument blank to just return the current expression.
+        </div>
+        <div>
+            <strong>Examples:</strong>
+            <ul>
+                <li><pre><code class="language-stscript">/ge-emote joy</code></pre></li>
+                <li><pre><code class="language-stscript">/ge-emote name=Alice lock=true joy</code></pre></li>
+                <li><pre><code class="language-stscript">/ge-emote name=Bob clear=true</code></pre></li>
             </ul>
         </div>
     `,
