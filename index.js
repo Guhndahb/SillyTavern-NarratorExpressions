@@ -443,7 +443,7 @@ const updateMembers = async()=>{
             const members = group.members.map(m=>characters.find(c=>c.avatar == m)).filter(it=>it);
             names.push(...getOrder(members.map(it=>it.name)).filter(it=>csettings.exclude?.indexOf(it.toLowerCase()) == -1));
             names.push(...members.filter(m=>!names.find(it=>it == m.name)).map(it=>it.name).filter(it=>csettings.exclude?.indexOf(it.toLowerCase()) == -1));
-        } else {
+        } else if (context.characterId) {
             names.push(characters[context.characterId].name);
         }
         const removed = nameList.filter(it=>names.indexOf(it) == -1);
