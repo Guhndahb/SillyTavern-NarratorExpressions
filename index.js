@@ -85,6 +85,7 @@ const initSettings = () => {
         transparentMenu: false,
         extensions: ['png'],
         position: 0,
+        positionSingle: 100,
     }, extension_settings.groupExpressions ?? {});
     extension_settings.groupExpressions = settings;
 
@@ -116,6 +117,18 @@ const initSettings = () => {
                             <input type="range" class="text_pole" min="0" max="100" id="stge--positionRange" value="${settings.position}">
                             Right
                             <input type="number" class="text_pole" min="0" max="100" id="stge--position" value="${settings.position}">
+                            %
+                        </div>
+                    </label>
+                </div>
+                <div class="flex-container">
+                    <label>
+                        Position of expression images with only one member
+                        <div class="stge--positionContainer">
+                            Left
+                            <input type="range" class="text_pole" min="0" max="100" id="stge--positionSingleRange" value="${settings.positionSingle}">
+                            Right
+                            <input type="number" class="text_pole" min="0" max="100" id="stge--positionSingle" value="${settings.positionSingle}">
                             %
                         </div>
                     </label>
@@ -201,13 +214,33 @@ const initSettings = () => {
         settings.position = document.querySelector('#stge--positionRange').value;
         document.querySelector('#stge--position').value = settings.position;
         saveSettingsDebounced();
-        root.style.setProperty('--position', settings.position);
+        if (namesCount > 1) {
+            root.style.setProperty('--position', settings.position);
+        }
     });
     document.querySelector('#stge--position').addEventListener('input', ()=>{
         settings.position = document.querySelector('#stge--position').value;
         document.querySelector('#stge--positionRange').value = settings.position;
         saveSettingsDebounced();
-        root.style.setProperty('--position', settings.position);
+        if (namesCount > 1) {
+            root.style.setProperty('--position', settings.position);
+        }
+    });
+    document.querySelector('#stge--positionSingleRange').addEventListener('input', ()=>{
+        settings.positionSingle = document.querySelector('#stge--positionSingleRange').value;
+        document.querySelector('#stge--positionSingle').value = settings.positionSingle;
+        saveSettingsDebounced();
+        if (namesCount == 1) {
+            root.style.setProperty('--position', settings.positionSingle);
+        }
+    });
+    document.querySelector('#stge--positionSingle').addEventListener('input', ()=>{
+        settings.positionSingle = document.querySelector('#stge--positionSingle').value;
+        document.querySelector('#stge--positionSingleRange').value = settings.positionSingle;
+        saveSettingsDebounced();
+        if (namesCount == 1) {
+            root.style.setProperty('--position', settings.positionSingle);
+        }
     });
     document.querySelector('#stge--numLeft').addEventListener('input', ()=>{
         settings.numLeft = Number(document.querySelector('#stge--numLeft').value);
@@ -428,6 +461,7 @@ const findImage = async(name, expression = null) => {
         return await findImage(name);
     }
 };
+let namesCount;
 const updateMembers = async()=>{
     if (busy) return;
     busy = true;
@@ -445,6 +479,14 @@ const updateMembers = async()=>{
             names.push(...members.filter(m=>!names.find(it=>it == m.name)).map(it=>it.name).filter(it=>csettings.exclude?.indexOf(it.toLowerCase()) == -1));
         } else if (context.characterId) {
             names.push(characters[context.characterId].name);
+        }
+        if (namesCount != names.length) {
+            namesCount = names.length;
+            if (names.length == 1) {
+                root.style.setProperty('--position', settings.positionSingle ?? '100');
+            } else {
+                root.style.setProperty('--position', settings.position);
+            }
         }
         const removed = nameList.filter(it=>names.indexOf(it) == -1);
         const added = names.filter(it=>nameList.indexOf(it) == -1);
