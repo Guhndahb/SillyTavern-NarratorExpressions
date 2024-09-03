@@ -424,7 +424,7 @@ const findImage = async(name, expression = null) => {
             return url;
         }
     }
-    if (expression != settings.expression) {
+    if (expression && expression != settings.expression) {
         return await findImage(name);
     }
 };
