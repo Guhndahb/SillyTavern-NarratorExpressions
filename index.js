@@ -461,7 +461,7 @@ const findImage = async(name, expression = null) => {
         return await findImage(name);
     }
 };
-let namesCount;
+let namesCount = -1;
 const updateMembers = async()=>{
     if (busy) return;
     busy = true;
