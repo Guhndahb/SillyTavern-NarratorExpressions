@@ -332,6 +332,7 @@ const initSettings = () => {
 
 const chatChanged = async ()=>{
     log('chatChanged');
+    namesCount = -1;
     const context = getContext();
 
     csettings = Object.assign({
@@ -355,6 +356,7 @@ const chatChanged = async ()=>{
 
 const groupUpdated = (...args) => {
     log('GROUP UPDATED', args);
+    namesCount = -1;
 };
 
 const messageRendered = async () => {
@@ -571,7 +573,6 @@ const updateMembers = async()=>{
 };
 eventSource.on(event_types.CHAT_CHANGED, ()=>(chatChanged(),null));
 eventSource.on(event_types.GROUP_UPDATED, (...args)=>groupUpdated(...args));
-eventSource.on(event_types.GROUP_UPDATED, ()=>(updateMembers(),null));
 // eventSource.on(event_types.USER_MESSAGE_RENDERED, ()=>messageRendered());
 
 
@@ -632,7 +633,7 @@ const start = async()=>{
         root.style.setProperty('--offset', settings.offset);
         root.style.setProperty('--transition', settings.transition);
         root.style.setProperty('--scale-dropoff', settings.scaleDropoff);
-        root.style.setProperty('--position', settings.position);
+        root.style.setProperty('--position', namesCount == 1 ? (settings.positionSingle ?? '100') : settings.position);
         document.body.append(root);
     }
     const context = getContext();
@@ -670,7 +671,7 @@ const init = ()=>{
         if (img && document.querySelector('#expression-image').src) {
             const src = document.querySelector('#expression-image').src;
             const parts = src.split('/');
-            const name = parts[parts.indexOf('characters') + 1];
+            const name = decodeURIComponent(parts[parts.indexOf('characters') + 1]);
             if (csettings.emotes[name]?.isLocked) return;
             const img = imgs.find(it=>it.getAttribute('data-character') == name)?.querySelector('.stge--img');
             if (img) {
