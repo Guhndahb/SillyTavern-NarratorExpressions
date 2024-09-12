@@ -406,11 +406,13 @@ const messageRendered = async () => {
                 .forEach(it=>it.classList.remove('stge--last'))
             ;
             if (lastMes == lastCharMes) {
-                img?.classList?.add('stge--last');
+                img?.classList.add('stge--last');
             }
             const ci = imgs.find(it=>it.getAttribute('data-character') == current);
-            ci?.style.setProperty('--order', '0');
-            ci?.style.setProperty('--dir', '1');
+            if (ci.style.getPropertyValue('--order') != '0') {
+                ci?.style.setProperty('--order', '0');
+                ci?.style.setProperty('--dir', '1');
+            }
             if (ci && !ci.closest('.stge--root')) {
                 ci.classList.add('stge--exit');
                 root.append(ci);
@@ -419,8 +421,15 @@ const messageRendered = async () => {
             }
             left.forEach(async(name,idx)=>{
                 const wrap = imgs.find(it=>it.getAttribute('data-character') == name);
-                wrap?.style?.setProperty('--order', String(idx + 1));
-                wrap?.style?.setProperty('--dir', '-1');
+                if (!wrap) return;
+                const order = String(idx + 1);
+                if (wrap.style.getPropertyValue('--order') != order) {
+                    wrap.style.setProperty('--order', order);
+                }
+                const dir = '-1';
+                if (wrap.style.getPropertyValue('--dir') != dir) {
+                    wrap.style.setProperty('--dir', dir);
+                }
                 if (!wrap.closest('.stge--root')) {
                     wrap.classList.add('stge--exit');
                     root.append(wrap);
@@ -430,8 +439,15 @@ const messageRendered = async () => {
             });
             right.forEach(async(name,idx)=>{
                 const wrap = imgs.find(it=>it.getAttribute('data-character') == name);
-                wrap?.style?.setProperty('--order', String(idx + 1));
-                wrap?.style?.setProperty('--dir', '1');
+                if (!wrap) return;
+                const order = String(idx + 1);
+                if (wrap.style.getPropertyValue('--order') != order) {
+                    wrap.style.setProperty('--order', order);
+                }
+                const dir = '1';
+                if (wrap.style.getPropertyValue('--dir') != dir) {
+                    wrap.style.setProperty('--dir', dir);
+                }
                 if (!wrap.closest('.stge--root')) {
                     wrap.classList.add('stge--exit');
                     root.append(wrap);
