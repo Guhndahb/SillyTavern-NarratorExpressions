@@ -549,7 +549,10 @@ const updateMembers = async()=>{
                 wrap.setAttribute('data-character', name);
                 const img = document.createElement('img'); {
                     img.classList.add('stge--img');
-                    const tc = chat_metadata.triggerCards ?? {};
+                    let tc = chat_metadata.triggerCards ?? {};
+                    if (!tc?.isEnabled) {
+                        tc = {};
+                    }
                     img.src = await findImage(tc?.costumes?.[name] ?? name, csettings[name]?.emote);
                     wrap.append(img);
                 }
@@ -687,12 +690,15 @@ const init = ()=>{
         if (img && document.querySelector('#expression-image').src) {
             const src = document.querySelector('#expression-image').src;
             const parts = src.split('/');
-            const name = decodeURIComponent(parts[parts.indexOf('characters') + 1]);
-            if (csettings.emotes[name]?.isLocked) return;
-            const img = imgs.find(it=>it.getAttribute('data-character') == name)?.querySelector('.stge--img');
+            const name = parts.slice(parts.indexOf('characters') + 1, -1).map(it=>decodeURIComponent(it));
+            if (csettings.emotes[name[0]]?.isLocked) return;
+            const img = imgs.find(it=>it.getAttribute('data-character') == name[0])?.querySelector('.stge--img');
             if (img) {
-                const tc = chat_metadata.triggerCards ?? {};
-                img.src = await findImage(tc?.costumes?.[name] ?? name, parts.slice(-1)[0].replace(/^(.+)\.[^.]+$/, '$1'));
+                let tc = chat_metadata.triggerCards ?? {};
+                if (!tc?.isEnabled) {
+                    tc = {};
+                }
+                img.src = await findImage(tc?.costumes?.[name] ?? name.join('/'), parts.at(-1).replace(/^(.+)\.[^.]+$/, '$1'));
             }
         }
     });
@@ -759,7 +765,10 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'ge-emote',
             saveMetadataDebounced();
             const img = imgs.find(it=>it.getAttribute('data-character') == name)?.querySelector('.stge--img');
             if (img) {
-                const tc = chat_metadata.triggerCards ?? {};
+                let tc = chat_metadata.triggerCards ?? {};
+                if (!tc?.isEnabled) {
+                    tc = {};
+                }
                 img.src = await findImage(tc?.costumes?.[name] ?? name, value);
             }
         }
