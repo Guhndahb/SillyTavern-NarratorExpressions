@@ -1,11 +1,11 @@
 {
-    "display_name": "Group Expressions",
+    "display_name": "Narrator Expressions",
     "loading_order": 100,
     "requires": [],
     "optional": [],
     "js": "index.js",
     "css": "style.css",
-    "author": "LenAnderson",
-    "version": "1.13.2",
-    "homePage": "https://github.com/LenAnderson/SillyTavern-GroupExpressions"
+    "author": "LenAnderson / Guhndahb",
+    "version": "1.13.2 / 0.1.0",
+    "homePage": "https://github.com/Guhndahb/SillyTavern-NarratorExpressions"
 }
