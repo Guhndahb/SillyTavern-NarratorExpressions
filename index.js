@@ -353,9 +353,9 @@ const chatChanged = async ()=>{
     }, chat_metadata.groupExpressions ?? {});
     chat_metadata.groupExpressions = csettings;
     log(chat_metadata);
-    document.querySelector('#stge--path').disabled = context.groupId == null;
+    document.querySelector('#stge--path').disabled = context.chatId == null;
     document.querySelector('#stge--path').value = csettings.path ?? '';
-    document.querySelector('#stge--exclude').disabled = context.groupId == null;
+    document.querySelector('#stge--exclude').disabled = context.chatId == null;
     document.querySelector('#stge--exclude').value = csettings.exclude?.join(', ') ?? '';
     document.querySelector('#stge--members').disabled = context.chatId == null;
     document.querySelector('#stge--members').value = csettings.members?.join(', ') ?? '';
