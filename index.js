@@ -147,6 +147,12 @@ const initSettings = () => {
                 </div>
                 <div class="flex-container">
                     <label>
+                        Chat path <small>(extra directory under /characters/, <strong>saved in chat</strong>)</small>
+                        <input type="text" class="text_pole" id="stge--path" placeholder="Alice&Friends" value="" disabled>
+                    </label>
+                </div>
+                <div class="flex-container">
+                    <label>
                         Characters to exclude <small>(comma separated list of names, <strong>saved in chat</strong>)</small>
                         <input type="text" class="text_pole" id="stge--exclude" placeholder="Alice, Bob, Carol" value="" disabled>
                     </label>
@@ -250,6 +256,11 @@ const initSettings = () => {
         settings.numRight = Number(document.querySelector('#stge--numRight').value);
         saveSettingsDebounced();
     });
+    document.querySelector('#stge--path').addEventListener('input', ()=>{
+        csettings.path = document.querySelector('#stge--path').value;
+        chat_metadata.groupExpressions = csettings;
+        saveMetadataDebounced();
+    });
     document.querySelector('#stge--exclude').addEventListener('input', ()=>{
         csettings.exclude = document.querySelector('#stge--exclude').value.toLowerCase().split(/\s*,\s*/).filter(it=>it.length);
         chat_metadata.groupExpressions = csettings;
@@ -342,6 +353,8 @@ const chatChanged = async ()=>{
     }, chat_metadata.groupExpressions ?? {});
     chat_metadata.groupExpressions = csettings;
     log(chat_metadata);
+    document.querySelector('#stge--path').disabled = context.groupId == null;
+    document.querySelector('#stge--path').value = csettings.path ?? '';
     document.querySelector('#stge--exclude').disabled = context.groupId == null;
     document.querySelector('#stge--exclude').value = csettings.exclude?.join(', ') ?? '';
     document.querySelector('#stge--members').disabled = context.chatId == null;
@@ -466,7 +479,7 @@ const messageRendered = async () => {
 
 const findImage = async(name, expression = null) => {
     for (const ext of settings.extensions) {
-        const url = `/characters/${name}/${expression ?? settings.expression}.${ext}`;
+        const url = csettings.exclude ? `/characters/${csettings.path}/${name}/${expression ?? settings.expression}.${ext}` : `/characters/${name}/${expression ?? settings.expression}.${ext}`;
         const resp = await fetch(url, {
             method: 'HEAD',
             headers: getRequestHeaders(),
