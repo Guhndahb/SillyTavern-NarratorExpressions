@@ -93,14 +93,14 @@ const initSettings = () => {
     <div class="stge--settings">
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <b>Group Expressions</b>
+                <b>Narrator Expressions</b>
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content" style="font-size:small;">
                 <div class="flex-container">
                     <label class="checkbox_label">
                         <input type="checkbox" id="stge--isEnabled" ${settings.isEnabled ? 'checked' : ''}>
-                        Enable group expressions
+                        Enable narrator expressions
                     </label>
                 </div>
                 <div class="flex-container">
@@ -743,7 +743,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'ge-members',
     returns: 'current custom member list',
     helpString: `
         <div>
-            Update the custom member list for Group Expressions.
+            Update the custom member list for Narrator Expressions.
         </div>
         <div>
             Leave the unnamed argument blank to just return the current custom member list.
