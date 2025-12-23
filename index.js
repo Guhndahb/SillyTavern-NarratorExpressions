@@ -5,7 +5,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { delay, escapeRegex, isTrueBoolean } from '../../../utils.js';
 
-const log = (...msg) => console.log('[GE]', ...msg);
+const log = (...msg) => console.log('[NE]', ...msg);
 /**
  * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed since the last time the debounced function was invoked.
  * @param {Function} func The function to debounce.
@@ -752,7 +752,7 @@ const updateMembers = async()=>{
             }
         }
     } catch (ex) {
-        console.error('[GE]', ex);
+        console.error('[NE]', ex);
     }
     busy = false;
 };
