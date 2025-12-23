@@ -174,6 +174,8 @@ async function getPresentOrderedNames(lastMes, nameList) {
     });
     // Debug log: ordered items after sorting
     log('orderedItems', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
+    // Debug: snapshot before demotion/forced adjustments
+    log('beforeDemotion', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     // Special rule: if not a USER message, ensure USER does not occupy slot 0 if another name exists
     if (!lastMes?.is_user && USER_NAME) {
         const userIdx = items.findIndex(it => it.name === USER_NAME);
@@ -191,6 +193,8 @@ async function getPresentOrderedNames(lastMes, nameList) {
             items.unshift(u);
         }
     }
+    // Debug: snapshot after demotion/forced adjustments
+    log('afterDemotion', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     // Final priorities log
     log('finalPriorities', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     return items.map(it => it.name);
