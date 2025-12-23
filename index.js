@@ -33,9 +33,161 @@ export function debounceAsync(func, timeout = 300) {
     };
 }
 
+// regex cache for makeWordRegex
+const regexCache = {};
 
+/**
+ * parseBracketSpans(text)
+ * - Treats single-quote ('), double-quote (") and asterisk (*) as bracket tokens.
+ * - For each opening token found, scans forward to the first matching token and returns a span [start, end) where end is closeIndex+1.
+ * - If no matching closer is found, returns [openIndex, text.length).
+ * - Returns array of {start, end} (end exclusive).
+ */
+function parseBracketSpans(text) {
+    const tokens = new Set(["'", '"', '*']);
+    const spans = [];
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (!tokens.has(ch)) continue;
+        // find next same token
+        let j = text.indexOf(ch, i + 1);
+        if (j === -1) {
+            spans.push({ start: i, end: text.length });
+            break;
+        }
+        spans.push({ start: i, end: j + 1 });
+        i = j; // continue scanning after closer
+    }
+    return spans;
+}
 
+/**
+ * getNonBracketSpans(text)
+ * - Returns complementary spans covering text outside the bracket spans.
+ * - Returns array of {start,end} (end exclusive).
+ */
+function getNonBracketSpans(text) {
+    const brackets = parseBracketSpans(text);
+    if (!brackets.length) return [{ start: 0, end: text.length }];
+    const spans = [];
+    let cursor = 0;
+    for (const b of brackets) {
+        if (b.start > cursor) {
+            spans.push({ start: cursor, end: b.start });
+        }
+        cursor = Math.max(cursor, b.end);
+    }
+    if (cursor < text.length) spans.push({ start: cursor, end: text.length });
+    return spans;
+}
 
+/**
+ * makeWordRegex(name)
+ * - Escapes name via escapeRegex and returns a cached RegExp using pattern (?:^|\W)(escaped)(?:$|\W) with 'gi' flags.
+ */
+function makeWordRegex(name) {
+    const key = String(name).toLowerCase();
+    if (regexCache[key]) return regexCache[key];
+    const escaped = escapeRegex(name);
+    const pattern = `(?:^|\\W)(${escaped})(?:$|\\W)`;
+    const rx = new RegExp(pattern, 'gi');
+    regexCache[key] = rx;
+    return rx;
+}
+
+/**
+ * countOccurrencesOutsideBrackets(name, nonBracketSpans)
+ * - Counts occurrences of name (using makeWordRegex) within each non-bracket span. Returns {count, firstIndex}
+ * - firstIndex is absolute index in original text of earliest match or null if none.
+ */
+function countOccurrencesOutsideBrackets(name, nonBracketSpans) {
+    const rx = makeWordRegex(name);
+    let count = 0;
+    let firstIndex = null;
+    for (const span of nonBracketSpans) {
+        rx.lastIndex = 0;
+        const substr = span._text ?? null; // may not exist, caller should provide spans over text (we will compute absolute index using match.index)
+        // we'll need to run rx on the slice: create a new regex instance to avoid interfering with shared state
+        const local = new RegExp(rx.source, rx.flags);
+        const textSlice = span._slice ?? null; // placeholder
+        // We'll compute over the span via exec on the slice
+        // Because the spans provided to this function won't contain text, we'll expect the caller to run this with appended properties. To keep function standalone, assume span has `text` property. But callers below will pass spans we compute locally having .text.
+        const hay = span.text;
+        if (!hay) continue;
+        let m;
+        while ((m = local.exec(hay)) !== null) {
+            count++;
+            const absIndex = span.start + m.index;
+            if (firstIndex === null || absIndex < firstIndex) firstIndex = absIndex;
+            // prevent infinite loops on zero-length matches
+            if (m.index === local.lastIndex) local.lastIndex++;
+        }
+    }
+    return { count, firstIndex };
+}
+
+/**
+ * getPresentOrderedNames(lastMes, nameList)
+ * - Returns ordered array of names present in lastMes according to occurrences outside bracket spans.
+ * - Tie-break: descending count, then earliest unbracketed occurrence index, then master nameList index.
+ * - If lastMes.is_user === true, force USER (nameList[0]) into slot 0.
+ *
+ * Examples:
+ * // tie-break rules: higher count first, then earliest index, then master index
+ * // text: "Alice says hello to Bob and Alice" -> counts: Alice=2, Bob=1 => ['Alice','Bob']
+ * // text: "(Alice) Bob Alice" -> bracketed Alice ignored, counts: Alice=1 (unbracketed), Bob=1, firstIndex tie-break by earliest occurrence
+ */
+async function getPresentOrderedNames(lastMes, nameList) {
+    const text = lastMes?.mes ?? lastMes?.message ?? lastMes?.text ?? '';
+    const USER_NAME = nameList?.[0];
+    if ((!text || text.length === 0) && lastMes?.is_user) {
+        return USER_NAME ? [USER_NAME] : [];
+    }
+    const nonBracketSpans = getNonBracketSpans(text).map(s => ({ ...s, text: text.slice(s.start, s.end) }));
+    const items = [];
+    for (let i = 0; i < nameList.length; i++) {
+        const name = nameList[i];
+        if (csettings?.exclude?.indexOf(name.toLowerCase()) > -1) continue;
+        const { count, firstIndex } = countOccurrencesOutsideBrackets(name, nonBracketSpans);
+        if (count > 0) items.push({ name, count, firstIndex, masterIndex: i });
+    }
+    // If message is user, ensure user exists and mark forced
+    if (lastMes?.is_user) {
+        if (USER_NAME) {
+            const exists = items.find(it => it.name === USER_NAME);
+            if (!exists) items.push({ name: USER_NAME, count: 0, firstIndex: null, masterIndex: 0, forced: true });
+            else exists.forced = true;
+        }
+    }
+    items.sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        const ai = a.firstIndex == null ? Infinity : a.firstIndex;
+        const bi = b.firstIndex == null ? Infinity : b.firstIndex;
+        if (ai !== bi) return ai - bi;
+        return a.masterIndex - b.masterIndex;
+    });
+    // If user forced, move to front
+    if (lastMes?.is_user && USER_NAME) {
+        const idx = items.findIndex(it => it.name === USER_NAME);
+        if (idx > -1) {
+            const [u] = items.splice(idx, 1);
+            items.unshift(u);
+        }
+    }
+    return items.map(it => it.name);
+}
+
+// Quick sanity test (will log examples on load)
+(async ()=>{
+    try {
+        const test1 = await getPresentOrderedNames({ mes: "Alice says hello to Bob and Alice" , is_user:false}, ['Alice','Bob','Carol']);
+        log('sanity test 1 orderedNames', test1);
+        const test2 = await getPresentOrderedNames({ mes: "(Alice) Bob Alice", is_user:false }, ['Alice','Bob','Carol']);
+        log('sanity test 2 orderedNames', test2);
+    } catch(e) {
+        console.error(e);
+    }
+})();
 /**@type {Object} */
 let settings;
 /**@type {Object} */
