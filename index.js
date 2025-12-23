@@ -179,6 +179,11 @@ async function getPresentOrderedNames(lastMes, nameList) {
     if (geVerboseLogging) log('orderedItems', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     // Debug: snapshot before demotion/forced adjustments
     if (geVerboseLogging) log('beforeDemotion', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
+    // Debug: demotion check state
+    if (geVerboseLogging) {
+        const userIdxDbg = items.findIndex(it => it.name === USER_NAME);
+        log('demotionCheck', { USER_NAME, userIdx: userIdxDbg, itemsNames: items.map(it=>it.name), lastMesIsUser: !!lastMes?.is_user });
+    }
     // Special rule: if not a USER message, ensure USER does not occupy slot 0 if another name exists
     if (!lastMes?.is_user && USER_NAME) {
         const userIdx = items.findIndex(it => it.name === USER_NAME);
