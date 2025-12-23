@@ -139,7 +139,9 @@ function countOccurrencesOutsideBrackets(name, nonBracketSpans) {
  */
 async function getPresentOrderedNames(lastMes, nameList) {
     const text = lastMes?.mes ?? lastMes?.message ?? lastMes?.text ?? '';
-    const USER_NAME = nameList?.[0];
+    // Determine USER name: prefer explicit custom members order (edit box) if available, else fall back to nameList[0]
+    const USER_NAME = (csettings?.members && csettings.members.length) ? csettings.members[0] : nameList?.[0];
+    if (geVerboseLogging) log('userNameResolution', { csettingsMembers: csettings?.members, nameListHead: nameList?.[0], USER_NAME });
     if ((!text || text.length === 0) && lastMes?.is_user) {
         return USER_NAME ? [USER_NAME] : [];
     }
