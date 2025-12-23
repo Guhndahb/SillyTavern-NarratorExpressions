@@ -176,7 +176,16 @@ async function getPresentOrderedNames(lastMes, nameList) {
     });
     // Debug log: ordered items after sorting
     log('orderedItems', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
-    // If user forced, move to front
+    // Special rule: if not a USER message, ensure USER does not occupy slot 0 if another name exists
+    if (!lastMes?.is_user && USER_NAME) {
+        const userIdx = items.findIndex(it => it.name === USER_NAME);
+        if (userIdx === 0 && items.length > 1) {
+            const [u] = items.splice(userIdx, 1);
+            // insert at position 1 (earliest allowed)
+            items.splice(1, 0, u);
+        }
+    }
+    // If user forced (user message), move to front
     if (lastMes?.is_user && USER_NAME) {
         const idx = items.findIndex(it => it.name === USER_NAME);
         if (idx > -1) {
