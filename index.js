@@ -145,12 +145,20 @@ async function getPresentOrderedNames(lastMes, nameList) {
     }
     const nonBracketSpans = getNonBracketSpans(text).map(s => ({ ...s, text: text.slice(s.start, s.end) }));
     const items = [];
+    // collect counts per name for debug
+    const perNameDebug = [];
     for (let i = 0; i < nameList.length; i++) {
         const name = nameList[i];
-        if (csettings?.exclude?.indexOf(name.toLowerCase()) > -1) continue;
+        if (csettings?.exclude?.indexOf(name.toLowerCase()) > -1) {
+            perNameDebug.push({ name, count: 0, firstIndex: null, excluded: true });
+            continue;
+        }
         const { count, firstIndex } = countOccurrencesOutsideBrackets(name, nonBracketSpans);
+        perNameDebug.push({ name, count, firstIndex, excluded: false });
         if (count > 0) items.push({ name, count, firstIndex, masterIndex: i });
     }
+    // Debug log: per-name counts before sorting
+    log('perNameCounts', perNameDebug);
     // If message is user, ensure user exists and mark forced
     if (lastMes?.is_user) {
         if (USER_NAME) {
@@ -166,6 +174,8 @@ async function getPresentOrderedNames(lastMes, nameList) {
         if (ai !== bi) return ai - bi;
         return a.masterIndex - b.masterIndex;
     });
+    // Debug log: ordered items after sorting
+    log('orderedItems', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     // If user forced, move to front
     if (lastMes?.is_user && USER_NAME) {
         const idx = items.findIndex(it => it.name === USER_NAME);
@@ -174,6 +184,8 @@ async function getPresentOrderedNames(lastMes, nameList) {
             items.unshift(u);
         }
     }
+    // Final priorities log
+    log('finalPriorities', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     return items.map(it => it.name);
 }
 
