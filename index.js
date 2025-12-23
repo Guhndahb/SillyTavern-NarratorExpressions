@@ -44,7 +44,7 @@ const regexCache = {};
  * - Returns array of {start, end} (end exclusive).
  */
 function parseBracketSpans(text) {
-    const tokens = new Set(["'", '"', '*']);
+    const tokens = new Set(['"', '*']);
     const spans = [];
     for (let i = 0; i < text.length; i++) {
         const ch = text[i];
