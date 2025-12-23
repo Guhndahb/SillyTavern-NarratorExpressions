@@ -67,7 +67,73 @@
 }
 
 /* Hide any extra images (Order 4+) */
-.stge--wrapper[style*="--order: 4"], 
+.stge--wrapper[style*="--order: 4"],
 .stge--wrapper[style*="--order: 5"] {
   display: none;
+}
+
+/* Layout adjustments for different visible counts */
+
+/* 1 image: use full height on the left for slot 0 */
+.stge--root[data-visible-count="1"] .stge--wrapper[style*="--order: 0"],
+.stge--root[data-visible-count="1"] .stge--wrapper[style*="--order:0"] {
+  height: 100vh !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: auto !important;
+  transform-origin: center left;
+}
+
+/* 2 images: slot 0 full-left, slot 1 full-right */
+.stge--root[data-visible-count="2"] .stge--wrapper[style*="--order: 0"],
+.stge--root[data-visible-count="2"] .stge--wrapper[style*="--order:0"] {
+  height: 100vh !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: auto !important;
+  transform-origin: center left;
+}
+.stge--root[data-visible-count="2"] .stge--wrapper[style*="--order: 1"],
+.stge--root[data-visible-count="2"] .stge--wrapper[style*="--order:1"] {
+  height: 100vh !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  left: auto !important;
+  transform-origin: center right;
+}
+
+/* 3 images: slot 0 full-left; slots 1 and 2 are half-height on the right (top and bottom)
+   Note: this intentionally remaps the visual placement for slots 1/2 when 3 images are visible
+*/
+.stge--root[data-visible-count="3"] .stge--wrapper[style*="--order: 0"],
+.stge--root[data-visible-count="3"] .stge--wrapper[style*="--order:0"] {
+  height: 100vh !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: auto !important;
+  transform-origin: center left;
+}
+/* place order:1 at top-right half */
+.stge--root[data-visible-count="3"] .stge--wrapper[style*="--order: 1"],
+.stge--root[data-visible-count="3"] .stge--wrapper[style*="--order:1"] {
+  height: 50vh !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform-origin: top right;
+}
+/* place order:2 at bottom-right half */
+.stge--root[data-visible-count="3"] .stge--wrapper[style*="--order: 2"],
+.stge--root[data-visible-count="3"] .stge--wrapper[style*="--order:2"] {
+  height: 50vh !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  top: auto !important;
+  left: auto !important;
+  transform-origin: bottom right;
 }
