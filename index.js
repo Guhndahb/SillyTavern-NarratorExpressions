@@ -139,6 +139,7 @@ async function getPresentOrderedNames(lastMes, nameList) {
         return USER_NAME ? [USER_NAME] : [];
     }
     const nonBracketSpans = getNonBracketSpans(text).map(s => ({ ...s, text: text.slice(s.start, s.end) }));
+    log('nonBracketSpans', nonBracketSpans);
     const items = [];
     // collect counts per name for debug
     const perNameDebug = [];
