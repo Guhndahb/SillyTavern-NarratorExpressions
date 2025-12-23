@@ -105,13 +105,8 @@ function countOccurrencesOutsideBrackets(name, nonBracketSpans) {
     let count = 0;
     let firstIndex = null;
     for (const span of nonBracketSpans) {
-        rx.lastIndex = 0;
-        const substr = span._text ?? null; // may not exist, caller should provide spans over text (we will compute absolute index using match.index)
-        // we'll need to run rx on the slice: create a new regex instance to avoid interfering with shared state
+        // create a fresh regex for this span to avoid shared-state issues
         const local = new RegExp(rx.source, rx.flags);
-        const textSlice = span._slice ?? null; // placeholder
-        // We'll compute over the span via exec on the slice
-        // Because the spans provided to this function won't contain text, we'll expect the caller to run this with appended properties. To keep function standalone, assume span has `text` property. But callers below will pass spans we compute locally having .text.
         const hay = span.text;
         if (!hay) continue;
         let m;
@@ -119,8 +114,8 @@ function countOccurrencesOutsideBrackets(name, nonBracketSpans) {
             count++;
             const absIndex = span.start + m.index;
             if (firstIndex === null || absIndex < firstIndex) firstIndex = absIndex;
-            // prevent infinite loops on zero-length matches
-            if (m.index === local.lastIndex) local.lastIndex++;
+            // prevent infinite loops on zero-length matches by checking matched string length
+            if (m[0].length === 0) local.lastIndex += 1;
         }
     }
     return { count, firstIndex };
