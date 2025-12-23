@@ -35,6 +35,9 @@ export function debounceAsync(func, timeout = 300) {
 
 // regex cache for makeWordRegex
 const regexCache = {};
+// logging control: only emit verbose debug logs once per changed message
+let lastLoggedMessageText = null;
+let geVerboseLogging = false;
 
 /**
  * parseBracketSpans(text)
@@ -111,7 +114,7 @@ function countOccurrencesOutsideBrackets(name, nonBracketSpans) {
         if (!hay) continue;
         // use matchAll to collect matches reliably
         const matches = Array.from(hay.matchAll(local));
-        if (matches.length) {
+        if (matches.length && geVerboseLogging) {
             log('matches for', name, 'span', span.start, matches.map(m=>({ match: m[0], index: m.index })));
         }
         for (const m of matches) {
@@ -141,7 +144,7 @@ async function getPresentOrderedNames(lastMes, nameList) {
         return USER_NAME ? [USER_NAME] : [];
     }
     const nonBracketSpans = getNonBracketSpans(text).map(s => ({ ...s, text: text.slice(s.start, s.end) }));
-    log('nonBracketSpans', nonBracketSpans);
+    if (geVerboseLogging) log('nonBracketSpans', nonBracketSpans);
     const items = [];
     // collect counts per name for debug
     const perNameDebug = [];
@@ -156,7 +159,7 @@ async function getPresentOrderedNames(lastMes, nameList) {
         if (count > 0) items.push({ name, count, firstIndex, masterIndex: i });
     }
     // Debug log: per-name counts before sorting
-    log('perNameCounts', perNameDebug);
+    if (geVerboseLogging) log('perNameCounts', perNameDebug);
     // If message is user, ensure user exists and mark forced
     if (lastMes?.is_user) {
         if (USER_NAME) {
@@ -173,9 +176,9 @@ async function getPresentOrderedNames(lastMes, nameList) {
         return a.masterIndex - b.masterIndex;
     });
     // Debug log: ordered items after sorting
-    log('orderedItems', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
+    if (geVerboseLogging) log('orderedItems', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     // Debug: snapshot before demotion/forced adjustments
-    log('beforeDemotion', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
+    if (geVerboseLogging) log('beforeDemotion', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     // Special rule: if not a USER message, ensure USER does not occupy slot 0 if another name exists
     if (!lastMes?.is_user && USER_NAME) {
         const userIdx = items.findIndex(it => it.name === USER_NAME);
@@ -196,7 +199,7 @@ async function getPresentOrderedNames(lastMes, nameList) {
     // Debug: snapshot after demotion/forced adjustments
     log('afterDemotion', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     // Final priorities log
-    log('finalPriorities', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
+    if (geVerboseLogging) log('finalPriorities', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     return items.map(it => it.name);
 }
 
@@ -555,10 +558,18 @@ const messageRendered = async () => {
             await updateMembers();
             const lastMes = chat.toReversed().find(it=>!it.is_system);
             const lastCharMes = chat.toReversed().find(it=>!it.is_user && !it.is_system && nameList.find(o=>it.name == o));
+            // Decide whether to emit verbose debug logs for this message (only once per changed message)
+            const messageTextForLog = lastMes?.mes ?? lastMes?.message ?? lastMes?.text ?? '';
+            if (messageTextForLog !== lastLoggedMessageText) {
+                geVerboseLogging = true;
+                lastLoggedMessageText = messageTextForLog;
+            } else {
+                geVerboseLogging = false;
+            }
 
             // New presence & ordering logic (narrator/DM mode): compute ordered names based on unbracketed occurrences
             const orderedNames = await getPresentOrderedNames(lastMes, nameList);
-            log('orderedNames', orderedNames);
+            if (geVerboseLogging) log('orderedNames', orderedNames);
             const slots = orderedNames.slice(0, 4);
 
             // Clean previous "last" markers
