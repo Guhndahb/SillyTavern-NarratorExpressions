@@ -579,6 +579,8 @@ const messageRendered = async () => {
             const orderedNames = await getPresentOrderedNames(lastMes, nameList);
             if (geVerboseLogging) log('orderedNames', orderedNames);
             const slots = orderedNames.slice(0, 4);
+            // expose how many images are visible so CSS can adapt layouts for 1/2/3 images
+            if (root) root.setAttribute('data-visible-count', String(Math.max(0, Math.min(4, slots.length))));
 
             // Clean previous "last" markers
             imgs.filter(it=>it.classList.contains('stge--last')).forEach(it=>it.classList.remove('stge--last'));
