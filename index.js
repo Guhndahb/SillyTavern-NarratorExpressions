@@ -530,96 +530,55 @@ const messageRendered = async () => {
         if (!busy) {
             updateSettingsBackground();
             await updateMembers();
-            //await delay(500); continue;
             const lastMes = chat.toReversed().find(it=>!it.is_system);
             const lastCharMes = chat.toReversed().find(it=>!it.is_user && !it.is_system && nameList.find(o=>it.name == o));
-            if (lastCharMes) {
-                if (lastCharMes.name != current) {
-                    if (left.indexOf(lastCharMes.name) > -1) {
-                        left.splice(left.indexOf(lastCharMes.name), 1);
-                    } else if (right.indexOf(lastCharMes.name) > -1) {
-                        right.splice(right.indexOf(lastCharMes.name), 1);
+
+            // New presence & ordering logic (narrator/DM mode): compute ordered names based on unbracketed occurrences
+            const orderedNames = await getPresentOrderedNames(lastMes, nameList);
+            log('orderedNames', orderedNames);
+            const slots = orderedNames.slice(0, 4);
+
+            // Clean previous "last" markers
+            imgs.filter(it=>it.classList.contains('stge--last')).forEach(it=>it.classList.remove('stge--last'));
+
+            // Show/hide and assign slot ordering
+            for (const wrapper of imgs) {
+                const name = wrapper.getAttribute('data-character');
+                const slotIndex = slots.indexOf(name);
+                if (slotIndex >= 0) {
+                    // assign corner slot via --order
+                    wrapper.style.setProperty('--order', String(slotIndex));
+                    // enter animation if not in root
+                    if (!wrapper.closest('.stge--root')) {
+                        wrapper.classList.add('stge--exit');
+                        root.append(wrapper);
+                        await delay(50);
+                        wrapper.classList.remove('stge--exit');
                     }
-                    if ((left.length >= settings.numLeft && settings.numLeft != -1) && (right.length >= settings.numRight && settings.numRight != -1)) {
-                        const isLeft = Math.random() < 0.5;
-                        let exit;
-                        if (isLeft) {
-                            exit = left.pop();
-                        } else {
-                            exit = right.pop();
-                        }
-                        if (exit) {
-                            const img = imgs.find(it=>it.getAttribute('data-character') == exit);
-                            img.classList.add('stge--exit');
-                            await delay(settings.transition + 150);
-                            img.remove();
-                        }
-                    }
-                    if (current) {
-                        if ((left.length < settings.numLeft || settings.numLeft == -1) && (left.length <= right.length || (right.length >= settings.numRight && settings.numRight != -1))) {
-                            left.unshift(current);
-                        } else if (right.length < (settings.numRight || settings.numRight == -1)) {
-                            right.unshift(current);
-                        }
+                    wrapper.classList.remove('stge--hidden');
+                } else {
+                    // hide it
+                    wrapper.style.removeProperty('--order');
+                    // if currently attached to root, animate exit and remove from DOM (element object remains in imgs)
+                    if (wrapper.closest('.stge--root')) {
+                        wrapper.classList.add('stge--exit');
+                        await delay(settings.transition + 150);
+                        wrapper.remove();
+                    } else {
+                        // keep in memory but mark hidden
+                        wrapper.classList.add('stge--hidden');
                     }
                 }
-                current = lastCharMes.name;
             }
-            const img = imgs.find(it=>it.getAttribute('data-character') == lastCharMes?.name);
-            imgs
-                .filter(it=>(it != img || lastMes != lastCharMes) && it.classList.contains('stge--last'))
-                .forEach(it=>it.classList.remove('stge--last'))
-            ;
-            if (lastMes == lastCharMes) {
-                img?.classList.add('stge--last');
+
+            // Mark the last response visually: if last message is not from user, and primary speaker corresponds to first slot
+            if (lastMes?.is_user === false) {
+                const primary = slots[0];
+                if (primary && lastCharMes && primary === lastCharMes.name) {
+                    const wrap = imgs.find(it=>it.getAttribute('data-character') == primary && it.closest('.stge--root'));
+                    if (wrap) wrap.classList.add('stge--last');
+                }
             }
-            const ci = imgs.find(it=>it.getAttribute('data-character') == current);
-            if (ci.style.getPropertyValue('--order') != '0') {
-                ci?.style.setProperty('--order', '0');
-                ci?.style.setProperty('--dir', '1');
-            }
-            if (ci && !ci.closest('.stge--root')) {
-                ci.classList.add('stge--exit');
-                root.append(ci);
-                await delay(50);
-                ci.classList.remove('stge--exit');
-            }
-            left.forEach(async(name,idx)=>{
-                const wrap = imgs.find(it=>it.getAttribute('data-character') == name);
-                if (!wrap) return;
-                const order = String(idx + 1);
-                if (wrap.style.getPropertyValue('--order') != order) {
-                    wrap.style.setProperty('--order', order);
-                }
-                const dir = '-1';
-                if (wrap.style.getPropertyValue('--dir') != dir) {
-                    wrap.style.setProperty('--dir', dir);
-                }
-                if (!wrap.closest('.stge--root')) {
-                    wrap.classList.add('stge--exit');
-                    root.append(wrap);
-                    await delay(50);
-                    wrap.classList.remove('stge--exit');
-                }
-            });
-            right.forEach(async(name,idx)=>{
-                const wrap = imgs.find(it=>it.getAttribute('data-character') == name);
-                if (!wrap) return;
-                const order = String(idx + 1);
-                if (wrap.style.getPropertyValue('--order') != order) {
-                    wrap.style.setProperty('--order', order);
-                }
-                const dir = '1';
-                if (wrap.style.getPropertyValue('--dir') != dir) {
-                    wrap.style.setProperty('--dir', dir);
-                }
-                if (!wrap.closest('.stge--root')) {
-                    wrap.classList.add('stge--exit');
-                    root.append(wrap);
-                    await delay(50);
-                    wrap.classList.remove('stge--exit');
-                }
-            });
         }
         await delay(Math.max(settings.transition + 100, 500));
     }
