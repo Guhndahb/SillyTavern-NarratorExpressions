@@ -109,13 +109,15 @@ function countOccurrencesOutsideBrackets(name, nonBracketSpans) {
         const local = new RegExp(rx.source, rx.flags);
         const hay = span.text;
         if (!hay) continue;
-        let m;
-        while ((m = local.exec(hay)) !== null) {
+        // use matchAll to collect matches reliably
+        const matches = Array.from(hay.matchAll(local));
+        if (matches.length) {
+            log('matches for', name, 'span', span.start, matches.map(m=>({ match: m[0], index: m.index })));
+        }
+        for (const m of matches) {
             count++;
             const absIndex = span.start + m.index;
             if (firstIndex === null || absIndex < firstIndex) firstIndex = absIndex;
-            // prevent infinite loops on zero-length matches by checking matched string length
-            if (m[0].length === 0) local.lastIndex += 1;
         }
     }
     return { count, firstIndex };
