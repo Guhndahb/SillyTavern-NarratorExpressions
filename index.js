@@ -183,9 +183,10 @@ async function getPresentOrderedNames(lastMes, nameList) {
     if (!lastMes?.is_user && USER_NAME) {
         const userIdx = items.findIndex(it => it.name === USER_NAME);
         if (userIdx === 0 && items.length > 1) {
-            const [u] = items.splice(userIdx, 1);
-            // insert at position 1 (earliest allowed)
-            items.splice(1, 0, u);
+            // swap positions 0 and 1 so USER is at earliest position 1
+            const tmp = items[0];
+            items[0] = items[1];
+            items[1] = tmp;
         }
     }
     // If user forced (user message), move to front
@@ -197,7 +198,7 @@ async function getPresentOrderedNames(lastMes, nameList) {
         }
     }
     // Debug: snapshot after demotion/forced adjustments
-    log('afterDemotion', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
+    if (geVerboseLogging) log('afterDemotion', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     // Final priorities log
     if (geVerboseLogging) log('finalPriorities', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     return items.map(it => it.name);
@@ -614,7 +615,7 @@ const messageRendered = async () => {
                 }
             }
         }
-        await delay(Math.max(settings.transition + 100, 500));
+        await delay(Math.max(settings.transition + 100, 1000));
     }
 };
 // eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, ()=>messageRendered());
