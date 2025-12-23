@@ -1,55 +1,73 @@
+/* ROOT: Full screen overlay BEHIND the chat */
 .stge--root {
-  --scale-speaker: 120;
-  --top: calc(100 - 100 / var(--scale-speaker) * 100);
-  --offset: 25;
-  --transition: 400;
-  --scale-dropoff: 3;
-  --position: 0;
-  --width: calc((100vw - var(--sheldWidth)) / 2);
+  position: fixed !important;
+  inset: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 10; /* Lower than #sheld (30) */
+  pointer-events: none; /* Allows clicking through to the app */
+  background: transparent;
+  display: block;
 }
-.stge--root {
-  position: absolute;
-  top: calc(var(--top) * 1%);
-  bottom: 0;
-  left: calc(var(--position) * (100vw - var(--width)) / 100);
-  left: clamp(0vw, calc(var(--position) * (100vw - var(--width)) / 100 - var(--settings-panel-width, 0px)), calc(100vw - var(--width)));
-  width: var(--width);
-  perspective: 500px;
-  transform-style: preserve-3d;
-  transition: calc(var(--transition) * 1ms);
-  overflow-x: visible;
-  overflow-y: clip;
+
+/* WRAPPERS: Common logic for all images */
+.stge--wrapper {
+  position: absolute !important;
+  height: 50vh !important; /* Forces each image to be half the screen height */
+  width: auto !important;  /* Width scales naturally based on aspect ratio */
+  margin: 0 !important;
+  padding: 0 !important;
+  
+  /* Reset dynamic animation styles */
+  transform: none !important;
+  scale: 1 !important;
+  top: auto; bottom: auto; left: auto; right: auto;
 }
-.stge--root > .stge--wrapper {
-  --order: 0;
-  --dir: 1;
-  position: absolute;
-  top: 0;
-  left: calc(var(--offset) * 1% * var(--dir) * var(--order));
-  width: 100%;
-  bottom: 0;
-  transform: translate3d(0, 0, calc(-1px * var(--order)));
-  transform-origin: bottom center;
-  transition: calc(var(--transition) * 1ms), transform 1ms;
-  scale: calc(100% - var(--order) * var(--scale-dropoff) * 1%);
-}
-.stge--root > .stge--wrapper.stge--exit {
-  left: calc(100vw * var(--dir));
-}
-.stge--root > .stge--wrapper.stge--last {
-  scale: calc(var(--scale-speaker) * 1%);
-}
-.stge--root > .stge--wrapper > .stge--img {
-  height: 100%;
+
+/* IMAGE: Ensure it fills the wrapper */
+.stge--img {
+  height: 100% !important;
+  width: auto !important;
   object-fit: contain;
-  aspect-ratio: 1/1.5;
-  object-position: bottom center;
-  margin-left: 50%;
-  transform: translateX(-50%);
+  display: block;
 }
-.stge--positionContainer {
-  display: flex;
-  flex-direction: row;
-  gap: 1em;
-  align-items: center;
+
+/* --- CORNER POSITIONS --- */
+
+/* Image 1: Top Left */
+.stge--wrapper[style*="--order: 0"], 
+.stge--wrapper[style*="--order:0"] {
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+}
+
+/* Image 2: Bottom Left */
+.stge--wrapper[style*="--order: 1"], 
+.stge--wrapper[style*="--order:1"] {
+  bottom: 0;
+  left: 0;
+  transform-origin: bottom left;
+}
+
+/* Image 3: Top Right */
+.stge--wrapper[style*="--order: 2"], 
+.stge--wrapper[style*="--order:2"] {
+  top: 0;
+  right: 0;
+  transform-origin: top right;
+}
+
+/* Image 4: Bottom Right */
+.stge--wrapper[style*="--order: 3"], 
+.stge--wrapper[style*="--order:3"] {
+  bottom: 0;
+  right: 0;
+  transform-origin: bottom right;
+}
+
+/* Hide any extra images (Order 4+) */
+.stge--wrapper[style*="--order: 4"], 
+.stge--wrapper[style*="--order: 5"] {
+  display: none;
 }
