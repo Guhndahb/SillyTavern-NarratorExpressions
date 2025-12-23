@@ -137,3 +137,76 @@
   left: auto !important;
   transform-origin: bottom right;
 }
+
+/* --- NEW: Area containers for left/right placements --- */
+/* .stge--area: general container (absolute) that spans the root vertically.
+   .stge--left-area / .stge--right-area: anchored to left/right with widths
+   controlled by CSS variables (--left-space / --right-space) set inline on .stge--root.
+   These areas are pointer-events:none so the overlay remains click-through. */
+.stge--area {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: visible; /* allow wrappers/images to overflow the area */
+  z-index: inherit; /* keep stacking consistent with .stge--root */
+}
+
+/* Left and right anchors use the inline CSS variables provided by index.js */
+.stge--left-area {
+  left: 0;
+  width: var(--left-space, 0px);
+}
+.stge--right-area {
+  right: 0;
+  width: var(--right-space, 0px);
+}
+
+/* --- Placement modes: center vs width ---
+   These rules only apply when the inline style on .stge--root contains
+   --placement-mode: center (or width). Using attribute selectors ensures
+   default behavior remains unchanged when --placement-mode is not set. */
+
+/* CENTER mode:
+   - Wrappers use full viewport height (preserve current full-height behaviour)
+   - Wrappers are horizontally centered within their area using left:50% + translateX(-50%)
+   - Images continue to use object-fit: contain so aspect ratio is preserved */
+.stge--root[style*="--placement-mode: center"] .stge--area .stge--wrapper,
+.stge--root[style*="--placement-mode:center"] .stge--area .stge--wrapper {
+  height: 100vh !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 50% !important; /* center inside the area */
+  right: auto !important;
+  transform: translateX(-50%) !important; /* horizontally center */
+  width: auto !important; /* keep width determined by aspect ratio */
+}
+.stge--root[style*="--placement-mode: center"] .stge--area .stge--img,
+.stge--root[style*="--placement-mode:center"] .stge--area .stge--img {
+  height: 100% !important;
+  width: auto !important;
+  object-fit: contain; /* ensure image fits within full-height wrapper */
+}
+
+/* WIDTH mode:
+   - Wrappers and images size to the available area width, maintaining aspect ratio
+   - Enforce width:100% and height:auto on both wrapper and img */
+.stge--root[style*="--placement-mode: width"] .stge--area .stge--wrapper,
+.stge--root[style*="--placement-mode:width"] .stge--area .stge--wrapper {
+  width: 100% !important; /* fill the area width */
+  height: auto !important; /* height driven by image aspect ratio */
+  left: 0 !important;
+  right: 0 !important;
+  top: auto; /* allow normal top/bottom rules to apply */
+  bottom: auto;
+  transform: none !important;
+}
+.stge--root[style*="--placement-mode: width"] .stge--area .stge--img,
+.stge--root[style*="--placement-mode:width"] .stge--area .stge--img {
+  width: 100% !important;
+  height: auto !important;
+  object-fit: contain;
+}
+
+/* Note: Specificity of these [style*="--placement-mode:"] selectors preserves
+   existing corner-positioning logic when --placement-mode is not present. */

@@ -232,6 +232,10 @@ let groupId;
 let chatId;
 /**@type {HTMLElement} */
 let root;
+/**@type {HTMLElement} */
+let leftArea; // DOM container covering left empty side-space
+/**@type {HTMLElement} */
+let rightArea; // DOM container covering right empty side-space
 /**@type {HTMLElement[]} */
 let imgs = [];
 /**@type {String[]} */
@@ -272,6 +276,7 @@ const initSettings = () => {
         extensions: ['png'],
         position: 0,
         positionSingle: 100,
+        placementMode: 'center', // new setting: 'center' (full-height centered) or 'width' (scale by available width)
     }, extension_settings.groupExpressions ?? {});
     extension_settings.groupExpressions = settings;
 
@@ -317,6 +322,16 @@ const initSettings = () => {
                             <input type="number" class="text_pole" min="0" max="100" id="stge--positionSingle" value="${settings.positionSingle}">
                             %
                         </div>
+                    </label>
+                </div>
+                <!-- Placement mode controls: grouped near other position-related inputs -->
+                <div class="flex-container">
+                    <label>
+                        Placement mode
+                        <select class="text_pole" id="stge--placementMode">
+                            <option value="center">Center (full height - default)</option>
+                            <option value="width">Width (scale to available side width)</option>
+                        </select>
                     </label>
                 </div>
                 <div class="flex-container">
@@ -406,7 +421,7 @@ const initSettings = () => {
         settings.position = document.querySelector('#stge--positionRange').value;
         document.querySelector('#stge--position').value = settings.position;
         saveSettingsDebounced();
-        if (namesCount > 1) {
+        if (namesCount > 1 && root) {
             root.style.setProperty('--position', settings.position);
         }
     });
@@ -414,7 +429,7 @@ const initSettings = () => {
         settings.position = document.querySelector('#stge--position').value;
         document.querySelector('#stge--positionRange').value = settings.position;
         saveSettingsDebounced();
-        if (namesCount > 1) {
+        if (namesCount > 1 && root) {
             root.style.setProperty('--position', settings.position);
         }
     });
@@ -422,7 +437,7 @@ const initSettings = () => {
         settings.positionSingle = document.querySelector('#stge--positionSingleRange').value;
         document.querySelector('#stge--positionSingle').value = settings.positionSingle;
         saveSettingsDebounced();
-        if (namesCount == 1) {
+        if (namesCount == 1 && root) {
             root.style.setProperty('--position', settings.positionSingle);
         }
     });
@@ -430,10 +445,25 @@ const initSettings = () => {
         settings.positionSingle = document.querySelector('#stge--positionSingle').value;
         document.querySelector('#stge--positionSingleRange').value = settings.positionSingle;
         saveSettingsDebounced();
-        if (namesCount == 1) {
+        if (namesCount == 1 && root) {
             root.style.setProperty('--position', settings.positionSingle);
         }
     });
+
+    // initialize placement mode selector value
+    const placementSel = document.querySelector('#stge--placementMode');
+    if (placementSel) placementSel.value = settings.placementMode;
+    placementSel?.addEventListener('change', ()=>{
+        // save setting, debounce, and immediately update UI via CSS variables without restarting
+        settings.placementMode = document.querySelector('#stge--placementMode').value;
+        saveSettingsDebounced();
+        if (root) {
+            root.style.setProperty('--placement-mode', settings.placementMode);
+            // update side sizes/areas immediately so image wrappers move to correct containers
+            updateSideSizes();
+        }
+    });
+
     document.querySelector('#stge--numLeft').addEventListener('input', ()=>{
         settings.numLeft = Number(document.querySelector('#stge--numLeft').value);
         saveSettingsDebounced();
@@ -460,22 +490,22 @@ const initSettings = () => {
     document.querySelector('#stge--scaleSpeaker').addEventListener('input', ()=>{
         settings.scaleSpeaker = Number(document.querySelector('#stge--scaleSpeaker').value);
         saveSettingsDebounced();
-        root.style.setProperty('--scale-speaker', String(settings.scaleSpeaker));
+        root?.style.setProperty('--scale-speaker', String(settings.scaleSpeaker));
     });
     document.querySelector('#stge--offset').addEventListener('input', ()=>{
         settings.offset = Number(document.querySelector('#stge--offset').value);
         saveSettingsDebounced();
-        root.style.setProperty('--offset', String(settings.offset));
+        root?.style.setProperty('--offset', String(settings.offset));
     });
     document.querySelector('#stge--scaleDropoff').addEventListener('input', ()=>{
         settings.scaleDropoff = Number(document.querySelector('#stge--scaleDropoff').value);
         saveSettingsDebounced();
-        root.style.setProperty('--scale-dropoff', String(settings.scaleDropoff));
+        root?.style.setProperty('--scale-dropoff', String(settings.scaleDropoff));
     });
     document.querySelector('#stge--transition').addEventListener('input', ()=>{
         settings.transition = Number(document.querySelector('#stge--transition').value);
         saveSettingsDebounced();
-        root.style.setProperty('--transition', String(settings.transition));
+        root?.style.setProperty('--transition', String(settings.transition));
     });
     document.querySelector('#stge--extensions').addEventListener('input', ()=>{
         settings.extensions = document.querySelector('#stge--extensions').value?.split(/,\s*/);
@@ -527,6 +557,37 @@ const initSettings = () => {
     });
 };
 
+/**
+ * updateSideSizes()
+ * - Finds the chatbox element (#sheld) and measures available empty horizontal space to the left/right of it.
+ * - Updates CSS variables on the root element for --left-space, --right-space and --placement-mode so CSS can position/scale images.
+ * - Also updates the width of the leftArea/rightArea DOM containers so wrappers appended into them are clipped/positioned correctly.
+ * - This function is intentionally idempotent and cheap so it can be called on window.resize and before rendering updates.
+ */
+function updateSideSizes() {
+    if (!root) return;
+    // Find the main chat container. Prefer getElementById but fallback to querySelector as requested.
+    const sheld = document.getElementById('sheld') || document.querySelector('#sheld');
+    let leftSpace = 0;
+    let rightSpace = 0;
+    if (sheld) {
+        const rect = sheld.getBoundingClientRect();
+        leftSpace = Math.max(0, Math.floor(rect.left));
+        rightSpace = Math.max(0, Math.floor(window.innerWidth - rect.right));
+    } else {
+        // No chatbox found - treat full viewport as available (split half/half) to avoid zero-width areas
+        leftSpace = Math.floor(window.innerWidth / 2);
+        rightSpace = window.innerWidth - leftSpace;
+    }
+    // expose pixel values as CSS variables for use by CSS rules
+    root.style.setProperty('--left-space', `${leftSpace}px`);
+    root.style.setProperty('--right-space', `${rightSpace}px`);
+    root.style.setProperty('--placement-mode', settings.placementMode);
+    // update DOM area widths so appended wrappers are inside the correct side area
+    if (leftArea) leftArea.style.width = `${leftSpace}px`;
+    if (rightArea) rightArea.style.width = `${rightSpace}px`;
+}
+
 const chatChanged = async ()=>{
     log('chatChanged');
     namesCount = -1;
@@ -563,6 +624,8 @@ const messageRendered = async () => {
     while (settings.isEnabled && (groupId || true)) {
         if (!busy) {
             updateSettingsBackground();
+            // Ensure side area sizes are recalculated before layout is applied so wrappers are appended into correct containers
+            if (root) updateSideSizes();
             await updateMembers();
             const lastMes = chat.toReversed().find(it=>!it.is_system);
             const lastCharMes = chat.toReversed().find(it=>!it.is_user && !it.is_system && nameList.find(o=>it.name == o));
@@ -595,7 +658,10 @@ const messageRendered = async () => {
                     // enter animation if not in root
                     if (!wrapper.closest('.stge--root')) {
                         wrapper.classList.add('stge--exit');
-                        root.append(wrapper);
+                        // choose correct side container based on slotIndex: 0/1 -> left area, 2/3 -> right area
+                        const targetArea = (slotIndex <= 1) ? leftArea : rightArea;
+                        // append into appropriate side-area container so wrapper occupies the empty side-space rather than full viewport
+                        targetArea?.append(wrapper);
                         await delay(50);
                         wrapper.classList.remove('stge--exit');
                     }
@@ -603,7 +669,7 @@ const messageRendered = async () => {
                 } else {
                     // hide it
                     wrapper.style.removeProperty('--order');
-                    // if currently attached to root, animate exit and remove from DOM (element object remains in imgs)
+                    // if currently attached to root (or one of its side areas), animate exit and remove from DOM (element object remains in imgs)
                     if (wrapper.closest('.stge--root')) {
                         wrapper.classList.add('stge--exit');
                         await delay(settings.transition + 150);
@@ -669,9 +735,9 @@ const updateMembers = async()=>{
         if (namesCount != names.length) {
             namesCount = names.length;
             if (names.length == 1) {
-                root.style.setProperty('--position', settings.positionSingle ?? '100');
+                root?.style.setProperty('--position', settings.positionSingle ?? '100');
             } else {
-                root.style.setProperty('--position', settings.position);
+                root?.style.setProperty('--position', settings.position);
             }
         }
         const removed = nameList.filter(it=>names.indexOf(it) == -1);
@@ -821,8 +887,34 @@ const start = async()=>{
         root.style.setProperty('--transition', settings.transition);
         root.style.setProperty('--scale-dropoff', settings.scaleDropoff);
         root.style.setProperty('--position', namesCount == 1 ? (settings.positionSingle ?? '100') : settings.position);
+        root.style.setProperty('--placement-mode', settings.placementMode);
         document.body.append(root);
     }
+    // Create left/right side-area containers that cover the empty side spaces of the viewport.
+    // These containers receive wrapper elements so they occupy only the empty space beside the centered chatbox.
+    leftArea = document.createElement('div');
+    leftArea.classList.add('stge--left-area');
+    leftArea.style.position = 'absolute';
+    leftArea.style.left = '0';
+    leftArea.style.top = '0';
+    leftArea.style.bottom = '0';
+    leftArea.style.overflow = 'hidden';
+    root.append(leftArea);
+
+    rightArea = document.createElement('div');
+    rightArea.classList.add('stge--right-area');
+    rightArea.style.position = 'absolute';
+    rightArea.style.right = '0';
+    rightArea.style.top = '0';
+    rightArea.style.bottom = '0';
+    rightArea.style.overflow = 'hidden';
+    root.append(rightArea);
+
+    // Listen for resize to keep side sizes in sync with the centered chatbox
+    window.addEventListener('resize', updateSideSizes);
+    // initial measurement
+    updateSideSizes();
+
     const context = getContext();
     groupId = context.groupId;
     chatId = context.chatid;
@@ -839,6 +931,12 @@ const end = ()=>{
     nameList = [];
     left = [];
     right = [];
+    // remove resize listener and cleanup side-area elements
+    window.removeEventListener('resize', updateSideSizes);
+    leftArea?.remove();
+    rightArea?.remove();
+    leftArea = null;
+    rightArea = null;
     root?.remove();
     root = null;
     while (imgs.length > 0) {
