@@ -166,6 +166,7 @@
    These rules only apply when the inline style on .stge--root contains
    --placement-mode: center (or width). Using attribute selectors ensures
    default behavior remains unchanged when --placement-mode is not set. */
+
 /* CENTER mode (restricted):
    - For visible counts 1 and 2 we want full-height wrappers centered inside each side-area.
    - For 3/4 images we must NOT override the per-count height rules (50vh) used for stacking.
@@ -191,6 +192,13 @@
   object-fit: contain; /* ensure image fits within full-height wrapper */
 }
 
+/* CENTER: also horizontally center wrappers for all visible-counts without forcing height
+   (keeps the per-visible-count height/top/bottom rules intact for 3/4 images) */
+.stge--root[style*="--placement-mode: center"] .stge--area .stge--wrapper,
+.stge--root[style*="--placement-mode:center"] .stge--area .stge--wrapper {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
 
 /* WIDTH mode:
    - Wrappers and images size to the available area width, maintaining aspect ratio
