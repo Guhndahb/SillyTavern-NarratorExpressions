@@ -666,59 +666,32 @@ const messageRendered = async () => {
                     // assign corner slot via --order
                     wrapper.style.setProperty('--order', String(slotIndex));
                     // enter animation if not in root
-                    if (!wrapper.closest('.stge--root')) {
+                    // Determine correct target area for this slot (left/right split by visibleCount)
+                    const visibleCount = slots.length;
+                    if (geVerboseLogging) log('placing wrapper', name, { slotIndex, visibleCount, slots, left, right, currentParent: wrapper.parentElement?.className });
+                    let targetArea = null;
+                    if (visibleCount === 1) {
+                        targetArea = leftArea;
+                    } else if (visibleCount === 2) {
+                        targetArea = (slotIndex === 0) ? leftArea : rightArea;
+                    } else if (visibleCount === 3) {
+                        targetArea = (slotIndex === 0) ? leftArea : rightArea;
+                    } else {
+                        targetArea = (slotIndex <= 1) ? leftArea : rightArea;
+                    }
+                    if (geVerboseLogging) log('chosen targetArea class:', targetArea?.className);
+                    // Only move DOM node if it's not already in the correct area
+                    if (wrapper.parentElement !== targetArea) {
                         wrapper.classList.add('stge--exit');
-                        // Map wrappers to side areas according to visibleCount so original layout is preserved:
-                        // 1 -> slot0 left full-height
-                        // 2 -> slot0 left, slot1 right
-                        // 3 -> slot0 left full-height, slot1 top-right, slot2 bottom-right
-                        // 4 -> slot0 top-left, slot1 bottom-left, slot2 top-right, slot3 bottom-right
-                        const visibleCount = slots.length;
                         if (geVerboseLogging) {
-                            log('placing wrapper', name, { slotIndex, visibleCount, slots, left, right });
-                            try {
-                                log('leftArea parent:', leftArea?.parentElement?.className, 'rightArea parent:', rightArea?.parentElement?.className);
-                                log('existing parents of wrapper:', wrapper.parentElement?.className);
-                            } catch(e) { log('placement debug error', e); }
-                        }
-                        let targetArea = null;
-                        if (visibleCount === 1) {
-                            targetArea = leftArea;
-                        } else if (visibleCount === 2) {
-                            targetArea = (slotIndex === 0) ? leftArea : rightArea;
-                        } else if (visibleCount === 3) {
-                            // slotIndex 0 -> left, 1/2 -> right
-                            targetArea = (slotIndex === 0) ? leftArea : rightArea;
-                        } else {
-                            // visibleCount >=4: distribute 0/1 -> left, 2/3 -> right
-                            targetArea = (slotIndex <= 1) ? leftArea : rightArea;
-                        }
-                        if (geVerboseLogging) log('chosen targetArea class:', targetArea?.className);
-                        // append into appropriate side-area container so wrapper occupies the empty side-space rather than full viewport
-                        if (geVerboseLogging) {
-                            try {
-                                log('append targetArea before append', {
-                                    name,
-                                    slotIndex,
-                                    visibleCount: slots.length,
-                                    targetClass: targetArea?.className,
-                                    targetWidth: targetArea?.getBoundingClientRect?.().width,
-                                });
-                            } catch (e) { log('pre-append log err', e); }
+                            try { log('pre-move', { name, from: wrapper.parentElement?.className, to: targetArea?.className }); } catch(e) { log('pre-move log err', e); }
                         }
                         targetArea?.append(wrapper);
                         await delay(50);
-                        if (geVerboseLogging) {
-                            try {
-                                log('appended wrapper', name, {
-                                    parentClass: wrapper.parentElement?.className,
-                                    parentRect: wrapper.parentElement?.getBoundingClientRect?.(),
-                                    wrapperRect: wrapper.getBoundingClientRect(),
-                                    wrapperStyle: wrapper.getAttribute('style')
-                                });
-                            } catch(e) { log('post-append log err', e); }
-                        }
                         wrapper.classList.remove('stge--exit');
+                        if (geVerboseLogging) {
+                            try { log('moved', { name, parent: wrapper.parentElement?.className, wrapperRect: wrapper.getBoundingClientRect() }); } catch(e) { log('post-move log err', e); }
+                        }
                     }
                     wrapper.classList.remove('stge--hidden');
                 } else {
