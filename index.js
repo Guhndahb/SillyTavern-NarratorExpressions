@@ -688,8 +688,18 @@ const messageRendered = async () => {
                             targetArea = (slotIndex <= 1) ? leftArea : rightArea;
                         }
                         // append into appropriate side-area container so wrapper occupies the empty side-space rather than full viewport
-                        targetArea?.append(wrapper);
+                        if (targetArea) {
+                            try {
+                                targetArea.append(wrapper);
+                                if (geVerboseLogging) log('append succeeded', { name, parent: wrapper.parentElement?.className });
+                            } catch (e) {
+                                console.error('[NE] append error', e, { name, targetArea });
+                            }
+                        } else {
+                            if (geVerboseLogging) log('no targetArea for', name, { targetArea, visibleCount, slotIndex });
+                        }
                         await delay(50);
+                        if (geVerboseLogging) log('post-append parent', wrapper.parentElement?.className);
                         wrapper.classList.remove('stge--exit');
                     }
                     wrapper.classList.remove('stge--hidden');
