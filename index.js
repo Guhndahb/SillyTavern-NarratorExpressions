@@ -824,7 +824,15 @@ const updateMembers = async()=>{
                     if (!tc?.isEnabled) {
                         tc = {};
                     }
-                    img.src = await findImage(tc?.costumes?.[name] ?? name, csettings[name]?.emote);
+                    // Resolve image URL and use a safe fallback if nothing is found.
+                    const resolvedSrc = await findImage(tc?.costumes?.[name] ?? name, csettings[name]?.emote);
+                    if (resolvedSrc) {
+                        img.src = resolvedSrc;
+                    } else {
+                        // Log helpful debug info and use a small transparent placeholder so the element still renders
+                        console.warn('[NE] findImage did not return a URL for', name, { costume: tc?.costumes?.[name], emote: csettings[name]?.emote });
+                        img.src = '/characters/default.png';
+                    }
                     wrap.append(img);
                     if (geVerboseLogging) {
                         log('created wrapper for', name, 'src', img.src);
@@ -835,7 +843,7 @@ const updateMembers = async()=>{
                             const imgStyle = getComputedStyle(img);
                             log('created wrapper metrics', { name, wrapRect, imgRect, wrapStyle: { position: wrapStyle.position, top: wrapStyle.top, left: wrapStyle.left, width: wrapStyle.width, height: wrapStyle.height }, imgStyle: { width: imgStyle.width, height: imgStyle.height, objectFit: imgStyle.objectFit } });
                         } catch(e) { log('created wrapper metrics error', e); }
-                        if (!img.src) log('findImage returned undefined for', name, { costume: tc?.costumes?.[name], emote: csettings[name]?.emote });
+                        if (!resolvedSrc) log('findImage returned undefined for', name, { costume: tc?.costumes?.[name], emote: csettings[name]?.emote });
                     }
                 }
             }
