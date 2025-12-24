@@ -86,7 +86,7 @@ function getNonBracketSpans(text) {
 
 /**
  * makeWordRegex(name)
- * - Escapes name via escapeRegex and returns a cached RegExp using pattern (?:^|\W)(escaped)(?:$|\W) with 'gi' flags.
+ * - Escapes name via escapeRegex and returns a cached RegExp using pattern (?:^|\\W)(escaped)(?:$|\\W) with 'gi' flags.
  */
 function makeWordRegex(name) {
     const key = String(name).toLowerCase();
@@ -586,6 +586,7 @@ function updateSideSizes() {
     // update DOM area widths so appended wrappers are inside the correct side area
     if (leftArea) leftArea.style.width = `${leftSpace}px`;
     if (rightArea) rightArea.style.width = `${rightSpace}px`;
+    if (geVerboseLogging) log('updateSideSizes', { leftSpace, rightSpace });
 }
 
 const chatChanged = async ()=>{
@@ -645,6 +646,15 @@ const messageRendered = async () => {
             // expose how many images are visible so CSS can adapt layouts for 1/2/3 images
             if (root) root.setAttribute('data-visible-count', String(Math.max(0, Math.min(4, slots.length))));
 
+            // debug: print slots and wrapper state when verbose logging is enabled
+            if (geVerboseLogging) {
+                try {
+                    log('messageRendered slots:', slots);
+                    log('wrappers:', imgs.map(w=>({ name: w.getAttribute('data-character'), attached: !!w.closest('.stge--root'), parent: w.parentElement?.className })));
+                    log('side widths (px):', { left: leftArea?.getBoundingClientRect?.().width, right: rightArea?.getBoundingClientRect?.().width });
+                } catch(e) { log('debug log error', e); }
+            }
+
             // Clean previous "last" markers
             imgs.filter(it=>it.classList.contains('stge--last')).forEach(it=>it.classList.remove('stge--last'));
 
@@ -663,6 +673,7 @@ const messageRendered = async () => {
                         // 2 -> slot0 left, slot1 right
                         // 3 -> slot0 left full-height, slot1 top-right, slot2 bottom-right
                         // 4 -> slot0 top-left, slot1 bottom-left, slot2 top-right, slot3 bottom-right
+                        if (geVerboseLogging) log('placing wrapper', name, { slotIndex, slots });
                         const visibleCount = slots.length;
                         let targetArea = null;
                         if (visibleCount === 1) {
@@ -805,6 +816,7 @@ const updateMembers = async()=>{
                     }
                     img.src = await findImage(tc?.costumes?.[name] ?? name, csettings[name]?.emote);
                     wrap.append(img);
+                    if (geVerboseLogging) log('created wrapper for', name, 'src', img.src);
                 }
             }
         }
