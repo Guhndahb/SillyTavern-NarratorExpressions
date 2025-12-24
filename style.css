@@ -166,13 +166,14 @@
    These rules only apply when the inline style on .stge--root contains
    --placement-mode: center (or width). Using attribute selectors ensures
    default behavior remains unchanged when --placement-mode is not set. */
-
-/* CENTER mode:
-   - Wrappers use full viewport height (preserve current full-height behaviour)
-   - Wrappers are horizontally centered within their area using left:50% + translateX(-50%)
-   - Images continue to use object-fit: contain so aspect ratio is preserved */
-.stge--root[style*="--placement-mode: center"] .stge--area .stge--wrapper,
-.stge--root[style*="--placement-mode:center"] .stge--area .stge--wrapper {
+/* CENTER mode (restricted):
+   - For visible counts 1 and 2 we want full-height wrappers centered inside each side-area.
+   - For 3/4 images we must NOT override the per-count height rules (50vh) used for stacking.
+   The selectors below apply the full-height centering only when the root's data-visible-count is 1 or 2. */
+.stge--root[style*="--placement-mode: center"][data-visible-count="1"] .stge--area .stge--wrapper,
+.stge--root[style*="--placement-mode:center"][data-visible-count="1"] .stge--area .stge--wrapper,
+.stge--root[style*="--placement-mode: center"][data-visible-count="2"] .stge--area .stge--wrapper,
+.stge--root[style*="--placement-mode:center"][data-visible-count="2"] .stge--area .stge--wrapper {
   height: 100vh !important;
   top: 0 !important;
   bottom: 0 !important;
@@ -181,12 +182,15 @@
   transform: translateX(-50%) !important; /* horizontally center */
   width: auto !important; /* keep width determined by aspect ratio */
 }
-.stge--root[style*="--placement-mode: center"] .stge--area .stge--img,
-.stge--root[style*="--placement-mode:center"] .stge--area .stge--img {
+.stge--root[style*="--placement-mode: center"][data-visible-count="1"] .stge--area .stge--img,
+.stge--root[style*="--placement-mode:center"][data-visible-count="1"] .stge--area .stge--img,
+.stge--root[style*="--placement-mode: center"][data-visible-count="2"] .stge--area .stge--img,
+.stge--root[style*="--placement-mode:center"][data-visible-count="2"] .stge--area .stge--img {
   height: 100% !important;
   width: auto !important;
   object-fit: contain; /* ensure image fits within full-height wrapper */
 }
+
 
 /* WIDTH mode:
    - Wrappers and images size to the available area width, maintaining aspect ratio
