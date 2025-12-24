@@ -586,7 +586,7 @@ function updateSideSizes() {
     // update DOM area widths so appended wrappers are inside the correct side area
     if (leftArea) leftArea.style.width = `${leftSpace}px`;
     if (rightArea) rightArea.style.width = `${rightSpace}px`;
-    if (geVerboseLogging) log('[NE] updateSideSizes', { leftSpace, rightSpace });
+    if (geVerboseLogging) log('updateSideSizes', { leftSpace, rightSpace });
 }
 
 const chatChanged = async ()=>{
@@ -649,10 +649,10 @@ const messageRendered = async () => {
             // debug: print slots and wrapper state when verbose logging is enabled
             if (geVerboseLogging) {
                 try {
-                    log('[NE] messageRendered slots:', slots);
-                    log('[NE] wrappers:', imgs.map(w=>({ name: w.getAttribute('data-character'), attached: !!w.closest('.stge--root'), parent: w.parentElement?.className })));
-                    log('[NE] side widths (px):', { left: leftArea?.getBoundingClientRect?.().width, right: rightArea?.getBoundingClientRect?.().width });
-                } catch(e) { log('[NE] debug log error', e); }
+                    log('messageRendered slots:', slots);
+                    log('wrappers:', imgs.map(w=>({ name: w.getAttribute('data-character'), attached: !!w.closest('.stge--root'), parent: w.parentElement?.className })));
+                    log('side widths (px):', { left: leftArea?.getBoundingClientRect?.().width, right: rightArea?.getBoundingClientRect?.().width });
+                } catch(e) { log('debug log error', e); }
             }
 
             // Clean previous "last" markers
@@ -675,11 +675,11 @@ const messageRendered = async () => {
                         // 4 -> slot0 top-left, slot1 bottom-left, slot2 top-right, slot3 bottom-right
                         const visibleCount = slots.length;
                         if (geVerboseLogging) {
-                            log('[NE] placing wrapper', name, { slotIndex, visibleCount, slots, left, right });
+                            log('placing wrapper', name, { slotIndex, visibleCount, slots, left, right });
                             try {
-                                log('[NE] leftArea parent:', leftArea?.parentElement?.className, 'rightArea parent:', rightArea?.parentElement?.className);
-                                log('[NE] existing parents of wrapper:', wrapper.parentElement?.className);
-                            } catch(e) { log('[NE] placement debug error', e); }
+                                log('leftArea parent:', leftArea?.parentElement?.className, 'rightArea parent:', rightArea?.parentElement?.className);
+                                log('existing parents of wrapper:', wrapper.parentElement?.className);
+                            } catch(e) { log('placement debug error', e); }
                         }
                         let targetArea = null;
                         if (visibleCount === 1) {
@@ -693,7 +693,7 @@ const messageRendered = async () => {
                             // visibleCount >=4: distribute 0/1 -> left, 2/3 -> right
                             targetArea = (slotIndex <= 1) ? leftArea : rightArea;
                         }
-                        if (geVerboseLogging) log('[NE] chosen targetArea class:', targetArea?.className);
+                        if (geVerboseLogging) log('chosen targetArea class:', targetArea?.className);
                         // append into appropriate side-area container so wrapper occupies the empty side-space rather than full viewport
                         if (geVerboseLogging) {
                             try {
@@ -728,7 +728,7 @@ const messageRendered = async () => {
                     if (wrapper.closest('.stge--root')) {
                         wrapper.classList.add('stge--exit');
                         await delay(settings.transition + 150);
-                        if (geVerboseLogging) log('[NE] removing wrapper', name);
+                        if (geVerboseLogging) log('removing wrapper', name);
                         wrapper.remove();
                     } else {
                         // keep in memory but mark hidden
