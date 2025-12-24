@@ -37,7 +37,7 @@ export function debounceAsync(func, timeout = 300) {
 const regexCache = {};
 // logging control: only emit verbose debug logs once per changed message
 let lastLoggedMessageText = null;
-let geVerboseLogging = true;
+let geVerboseLogging = false;
 
 /**
  * parseBracketSpans(text)
@@ -688,18 +688,29 @@ const messageRendered = async () => {
                             targetArea = (slotIndex <= 1) ? leftArea : rightArea;
                         }
                         // append into appropriate side-area container so wrapper occupies the empty side-space rather than full viewport
-                        if (targetArea) {
+                        if (geVerboseLogging) {
                             try {
-                                targetArea.append(wrapper);
-                                if (geVerboseLogging) log('append succeeded', { name, parent: wrapper.parentElement?.className });
-                            } catch (e) {
-                                console.error('[NE] append error', e, { name, targetArea });
-                            }
-                        } else {
-                            if (geVerboseLogging) log('no targetArea for', name, { targetArea, visibleCount, slotIndex });
+                                log('append targetArea before append', {
+                                    name,
+                                    slotIndex,
+                                    visibleCount: slots.length,
+                                    targetClass: targetArea?.className,
+                                    targetWidth: targetArea?.getBoundingClientRect?.().width,
+                                });
+                            } catch (e) { log('pre-append log err', e); }
                         }
+                        targetArea?.append(wrapper);
                         await delay(50);
-                        if (geVerboseLogging) log('post-append parent', wrapper.parentElement?.className);
+                        if (geVerboseLogging) {
+                            try {
+                                log('appended wrapper', name, {
+                                    parentClass: wrapper.parentElement?.className,
+                                    parentRect: wrapper.parentElement?.getBoundingClientRect?.(),
+                                    wrapperRect: wrapper.getBoundingClientRect(),
+                                    wrapperStyle: wrapper.getAttribute('style')
+                                });
+                            } catch(e) { log('post-append log err', e); }
+                        }
                         wrapper.classList.remove('stge--exit');
                     }
                     wrapper.classList.remove('stge--hidden');
@@ -735,43 +746,20 @@ const messageRendered = async () => {
 
 
 
-const findImage = async (name, expression = null) => {
-    // prefer explicit expression if provided, else use default expression
-    const expr = expression ?? settings.expression;
-    // choose base path: if a chat-specific path is configured, use it; otherwise use top-level characters
-    const basePath = (csettings && csettings.path) ? `/characters/${csettings.path}` : '/characters';
+const findImage = async(name, expression = null) => {
     for (const ext of settings.extensions) {
-        const url = `${basePath}/${name}/${expr}.${ext}`;
-        if (geVerboseLogging) log('findImage trying', url);
-        try {
-            const resp = await fetch(url, {
-                method: 'HEAD',
-                headers: getRequestHeaders(),
-            });
-            if (geVerboseLogging) log('findImage HEAD', url, resp.status);
-            if (resp.ok) return url;
-        } catch (e) {
-            if (geVerboseLogging) console.warn('findImage fetch error', e, url);
+        const url = csettings.exclude ? `/characters/${csettings.path}/${name}/${expression ?? settings.expression}.${ext}` : `/characters/${name}/${expression ?? settings.expression}.${ext}`;
+        const resp = await fetch(url, {
+            method: 'HEAD',
+            headers: getRequestHeaders(),
+        });
+        if (resp.ok) {
+            return url;
         }
     }
-    // fallback: if an explicit expression was provided and it failed, try without expression
     if (expression && expression != settings.expression) {
-        return await findImage(name, null);
+        return await findImage(name);
     }
-    // additional fallback: try without chat-specific subpath if we tried that above
-    if (csettings && csettings.path) {
-        for (const ext of settings.extensions) {
-            const url = `/characters/${name}/${expr}.${ext}`;
-            if (geVerboseLogging) log('findImage trying fallback', url);
-            try {
-                const resp = await fetch(url, { method: 'HEAD', headers: getRequestHeaders() });
-                if (resp.ok) return url;
-            } catch (e) {
-                if (geVerboseLogging) console.warn('findImage fetch error', e, url);
-            }
-        }
-    }
-    return null;
 };
 let namesCount = -1;
 const updateMembers = async()=>{
@@ -847,32 +835,9 @@ const updateMembers = async()=>{
                     if (!tc?.isEnabled) {
                         tc = {};
                     }
-                    // Resolve image URL before creating the DOM wrapper. If nothing is found,
-                    // treat the character as absent and do not create a wrapper for it.
-                    const resolvedSrc = await findImage(tc?.costumes?.[name] ?? name, csettings[name]?.emote);
-                    if (!resolvedSrc) {
-                        // remove the provisional nameList entry added earlier
-                        const nidx = nameList.indexOf(name);
-                        if (nidx > -1) nameList.splice(nidx, 1);
-                        // remove from left/right queues if present
-                        const li = left.indexOf(name); if (li > -1) left.splice(li, 1);
-                        const ri = right.indexOf(name); if (ri > -1) right.splice(ri, 1);
-                        if (current === name) current = null;
-                        console.warn('[NE] findImage did not return a URL for (skipping)', name, { costume: tc?.costumes?.[name], emote: csettings[name]?.emote });
-                        continue; // skip wrapper creation for this character
-                    }
-                    img.src = resolvedSrc;
+                    img.src = await findImage(tc?.costumes?.[name] ?? name, csettings[name]?.emote);
                     wrap.append(img);
-                    if (geVerboseLogging) {
-                        log('created wrapper for', name, 'src', img.src);
-                        try {
-                            const wrapRect = wrap.getBoundingClientRect();
-                            const imgRect = img.getBoundingClientRect();
-                            const wrapStyle = getComputedStyle(wrap);
-                            const imgStyle = getComputedStyle(img);
-                            log('created wrapper metrics', { name, wrapRect, imgRect, wrapStyle: { position: wrapStyle.position, top: wrapStyle.top, left: wrapStyle.left, width: wrapStyle.width, height: wrapStyle.height }, imgStyle: { width: imgStyle.width, height: imgStyle.height, objectFit: imgStyle.objectFit } });
-                        } catch(e) { log('created wrapper metrics error', e); }
-                    }
+                    if (geVerboseLogging) log('created wrapper for', name, 'src', img.src);
                 }
             }
         }
@@ -1001,6 +966,18 @@ const start = async()=>{
     window.addEventListener('resize', updateSideSizes);
     // initial measurement
     updateSideSizes();
+
+    // Diagnostic logging: report area classnames and computed widths after initial measurement
+    if (geVerboseLogging) {
+        try {
+            log('start areas:', {
+                leftClass: leftArea.className,
+                rightClass: rightArea.className,
+                leftWidth: leftArea.getBoundingClientRect().width,
+                rightWidth: rightArea.getBoundingClientRect().width,
+            });
+        } catch (e) { log('start areas log err', e); }
+    }
 
     const context = getContext();
     groupId = context.groupId;
