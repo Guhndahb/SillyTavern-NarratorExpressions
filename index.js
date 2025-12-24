@@ -658,8 +658,24 @@ const messageRendered = async () => {
                     // enter animation if not in root
                     if (!wrapper.closest('.stge--root')) {
                         wrapper.classList.add('stge--exit');
-                        // choose correct side container based on slotIndex: 0/1 -> left area, 2/3 -> right area
-                        const targetArea = (slotIndex <= 1) ? leftArea : rightArea;
+                        // Map wrappers to side areas according to visibleCount so original layout is preserved:
+                        // 1 -> slot0 left full-height
+                        // 2 -> slot0 left, slot1 right
+                        // 3 -> slot0 left full-height, slot1 top-right, slot2 bottom-right
+                        // 4 -> slot0 top-left, slot1 bottom-left, slot2 top-right, slot3 bottom-right
+                        const visibleCount = slots.length;
+                        let targetArea = null;
+                        if (visibleCount === 1) {
+                            targetArea = leftArea;
+                        } else if (visibleCount === 2) {
+                            targetArea = (slotIndex === 0) ? leftArea : rightArea;
+                        } else if (visibleCount === 3) {
+                            // slotIndex 0 -> left, 1/2 -> right
+                            targetArea = (slotIndex === 0) ? leftArea : rightArea;
+                        } else {
+                            // visibleCount >=4: distribute 0/1 -> left, 2/3 -> right
+                            targetArea = (slotIndex <= 1) ? leftArea : rightArea;
+                        }
                         // append into appropriate side-area container so wrapper occupies the empty side-space rather than full viewport
                         targetArea?.append(wrapper);
                         await delay(50);
@@ -893,21 +909,24 @@ const start = async()=>{
     // Create left/right side-area containers that cover the empty side spaces of the viewport.
     // These containers receive wrapper elements so they occupy only the empty space beside the centered chatbox.
     leftArea = document.createElement('div');
-    leftArea.classList.add('stge--left-area');
+    // give container both the generic area class and the left-specific class so CSS rules apply
+    leftArea.classList.add('stge--area', 'stge--left-area');
     leftArea.style.position = 'absolute';
     leftArea.style.left = '0';
     leftArea.style.top = '0';
     leftArea.style.bottom = '0';
-    leftArea.style.overflow = 'hidden';
+    // allow wrappers/images to overflow when needed; CSS expects visible
+    leftArea.style.overflow = 'visible';
     root.append(leftArea);
 
     rightArea = document.createElement('div');
-    rightArea.classList.add('stge--right-area');
+    // give container both the generic area class and the right-specific class so CSS rules apply
+    rightArea.classList.add('stge--area', 'stge--right-area');
     rightArea.style.position = 'absolute';
     rightArea.style.right = '0';
     rightArea.style.top = '0';
     rightArea.style.bottom = '0';
-    rightArea.style.overflow = 'hidden';
+    rightArea.style.overflow = 'visible';
     root.append(rightArea);
 
     // Listen for resize to keep side sizes in sync with the centered chatbox
@@ -970,6 +989,7 @@ const init = ()=>{
     });
 };
 init();
+
 
 
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'ge-members',
