@@ -735,20 +735,43 @@ const messageRendered = async () => {
 
 
 
-const findImage = async(name, expression = null) => {
+const findImage = async (name, expression = null) => {
+    // prefer explicit expression if provided, else use default expression
+    const expr = expression ?? settings.expression;
+    // choose base path: if a chat-specific path is configured, use it; otherwise use top-level characters
+    const basePath = (csettings && csettings.path) ? `/characters/${csettings.path}` : '/characters';
     for (const ext of settings.extensions) {
-        const url = csettings.exclude ? `/characters/${csettings.path}/${name}/${expression ?? settings.expression}.${ext}` : `/characters/${name}/${expression ?? settings.expression}.${ext}`;
-        const resp = await fetch(url, {
-            method: 'HEAD',
-            headers: getRequestHeaders(),
-        });
-        if (resp.ok) {
-            return url;
+        const url = `${basePath}/${name}/${expr}.${ext}`;
+        if (geVerboseLogging) log('findImage trying', url);
+        try {
+            const resp = await fetch(url, {
+                method: 'HEAD',
+                headers: getRequestHeaders(),
+            });
+            if (geVerboseLogging) log('findImage HEAD', url, resp.status);
+            if (resp.ok) return url;
+        } catch (e) {
+            if (geVerboseLogging) console.warn('findImage fetch error', e, url);
         }
     }
+    // fallback: if an explicit expression was provided and it failed, try without expression
     if (expression && expression != settings.expression) {
-        return await findImage(name);
+        return await findImage(name, null);
     }
+    // additional fallback: try without chat-specific subpath if we tried that above
+    if (csettings && csettings.path) {
+        for (const ext of settings.extensions) {
+            const url = `/characters/${name}/${expr}.${ext}`;
+            if (geVerboseLogging) log('findImage trying fallback', url);
+            try {
+                const resp = await fetch(url, { method: 'HEAD', headers: getRequestHeaders() });
+                if (resp.ok) return url;
+            } catch (e) {
+                if (geVerboseLogging) console.warn('findImage fetch error', e, url);
+            }
+        }
+    }
+    return null;
 };
 let namesCount = -1;
 const updateMembers = async()=>{
