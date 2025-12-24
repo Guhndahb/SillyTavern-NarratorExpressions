@@ -167,12 +167,11 @@
    --placement-mode: center (or width). Using attribute selectors ensures
    default behavior remains unchanged when --placement-mode is not set. */
 
-/* CENTER mode:
-   - Wrappers use full viewport height (preserve current full-height behaviour)
-   - Wrappers are horizontally centered within their area using left:50% + translateX(-50%)
-   - Images continue to use object-fit: contain so aspect ratio is preserved */
-.stge--root[style*="--placement-mode: center"] .stge--area .stge--wrapper,
-.stge--root[style*="--placement-mode:center"] .stge--area .stge--wrapper {
+/* CENTER mode adjustments scoped to visible counts so we don't override
+   the special half-height stacking rules used for 3/4 images. */
+/* 1 image: full-height centered within its area */
+.stge--root[style*="--placement-mode: center"][data-visible-count="1"] .stge--area .stge--wrapper,
+.stge--root[style*="--placement-mode:center"][data-visible-count="1"] .stge--area .stge--wrapper {
   height: 100vh !important;
   top: 0 !important;
   bottom: 0 !important;
@@ -181,11 +180,36 @@
   transform: translateX(-50%) !important; /* horizontally center */
   width: auto !important; /* keep width determined by aspect ratio */
 }
-.stge--root[style*="--placement-mode: center"] .stge--area .stge--img,
-.stge--root[style*="--placement-mode:center"] .stge--area .stge--img {
+.stge--root[style*="--placement-mode: center"][data-visible-count="1"] .stge--area .stge--img,
+.stge--root[style*="--placement-mode:center"][data-visible-count="1"] .stge--area .stge--img {
   height: 100% !important;
   width: auto !important;
   object-fit: contain; /* ensure image fits within full-height wrapper */
+}
+
+/* 2 images: preserve full-height per-slot but horizontally center each wrapper inside its area */
+.stge--root[style*="--placement-mode: center"][data-visible-count="2"] .stge--area .stge--wrapper[style*="--order: 0"],
+.stge--root[style*="--placement-mode:center"][data-visible-count="2"] .stge--area .stge--wrapper[style*="--order:0"] {
+  /* keep height/top/bottom from the data-visible-count rules; only center horizontally */
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  right: auto !important;
+  width: auto !important;
+}
+.stge--root[style*="--placement-mode: center"][data-visible-count="2"] .stge--area .stge--wrapper[style*="--order: 1"],
+.stge--root[style*="--placement-mode:center"][data-visible-count="2"] .stge--area .stge--wrapper[style*="--order:1"] {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  right: auto !important;
+  width: auto !important;
+}
+
+/* Images keep full-height within their wrappers for the 2-image case */
+.stge--root[style*="--placement-mode: center"][data-visible-count="2"] .stge--area .stge--img,
+.stge--root[style*="--placement-mode:center"][data-visible-count="2"] .stge--area .stge--img {
+  height: 100% !important;
+  width: auto !important;
+  object-fit: contain;
 }
 
 /* WIDTH mode:
