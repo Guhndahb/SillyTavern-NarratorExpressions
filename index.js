@@ -166,7 +166,7 @@ async function getPresentOrderedNames(lastMes, nameList) {
     if (lastMes?.is_user) {
         if (USER_NAME) {
             const exists = items.find(it => it.name === USER_NAME);
-            if (!exists) items.push({ name: USER_NAME, count: 0, firstIndex: null, masterIndex: 0, forced: true });
+            if (!exists) items.push({ name: USER_NAME, count: 1, firstIndex: 0, masterIndex: 0, forced: true });
             else exists.forced = true;
         }
     }
