@@ -826,7 +826,17 @@ const updateMembers = async()=>{
                     }
                     img.src = await findImage(tc?.costumes?.[name] ?? name, csettings[name]?.emote);
                     wrap.append(img);
-                    if (geVerboseLogging) log('created wrapper for', name, 'src', img.src);
+                    if (geVerboseLogging) {
+                        log('created wrapper for', name, 'src', img.src);
+                        try {
+                            const wrapRect = wrap.getBoundingClientRect();
+                            const imgRect = img.getBoundingClientRect();
+                            const wrapStyle = getComputedStyle(wrap);
+                            const imgStyle = getComputedStyle(img);
+                            log('created wrapper metrics', { name, wrapRect, imgRect, wrapStyle: { position: wrapStyle.position, top: wrapStyle.top, left: wrapStyle.left, width: wrapStyle.width, height: wrapStyle.height }, imgStyle: { width: imgStyle.width, height: imgStyle.height, objectFit: imgStyle.objectFit } });
+                        } catch(e) { log('created wrapper metrics error', e); }
+                        if (!img.src) log('findImage returned undefined for', name, { costume: tc?.costumes?.[name], emote: csettings[name]?.emote });
+                    }
                 }
             }
         }
