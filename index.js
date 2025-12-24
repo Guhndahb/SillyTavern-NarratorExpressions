@@ -847,15 +847,21 @@ const updateMembers = async()=>{
                     if (!tc?.isEnabled) {
                         tc = {};
                     }
-                    // Resolve image URL and use a safe fallback if nothing is found.
+                    // Resolve image URL before creating the DOM wrapper. If nothing is found,
+                    // treat the character as absent and do not create a wrapper for it.
                     const resolvedSrc = await findImage(tc?.costumes?.[name] ?? name, csettings[name]?.emote);
-                    if (resolvedSrc) {
-                        img.src = resolvedSrc;
-                    } else {
-                        // Log helpful debug info and use a small transparent placeholder so the element still renders
-                        console.warn('[NE] findImage did not return a URL for', name, { costume: tc?.costumes?.[name], emote: csettings[name]?.emote });
-                        img.src = '/characters/default.png';
+                    if (!resolvedSrc) {
+                        // remove the provisional nameList entry added earlier
+                        const nidx = nameList.indexOf(name);
+                        if (nidx > -1) nameList.splice(nidx, 1);
+                        // remove from left/right queues if present
+                        const li = left.indexOf(name); if (li > -1) left.splice(li, 1);
+                        const ri = right.indexOf(name); if (ri > -1) right.splice(ri, 1);
+                        if (current === name) current = null;
+                        console.warn('[NE] findImage did not return a URL for (skipping)', name, { costume: tc?.costumes?.[name], emote: csettings[name]?.emote });
+                        continue; // skip wrapper creation for this character
                     }
+                    img.src = resolvedSrc;
                     wrap.append(img);
                     if (geVerboseLogging) {
                         log('created wrapper for', name, 'src', img.src);
@@ -866,7 +872,6 @@ const updateMembers = async()=>{
                             const imgStyle = getComputedStyle(img);
                             log('created wrapper metrics', { name, wrapRect, imgRect, wrapStyle: { position: wrapStyle.position, top: wrapStyle.top, left: wrapStyle.left, width: wrapStyle.width, height: wrapStyle.height }, imgStyle: { width: imgStyle.width, height: imgStyle.height, objectFit: imgStyle.objectFit } });
                         } catch(e) { log('created wrapper metrics error', e); }
-                        if (!resolvedSrc) log('findImage returned undefined for', name, { costume: tc?.costumes?.[name], emote: csettings[name]?.emote });
                     }
                 }
             }
