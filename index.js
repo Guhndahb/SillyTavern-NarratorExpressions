@@ -37,7 +37,7 @@ export function debounceAsync(func, timeout = 300) {
 const regexCache = {};
 // logging control: only emit verbose debug logs once per changed message
 let lastLoggedMessageText = null;
-let geVerboseLogging = false;
+let geVerboseLogging = true;
 
 /**
  * parseBracketSpans(text)
