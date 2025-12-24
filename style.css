@@ -192,10 +192,22 @@
   object-fit: contain; /* ensure image fits within full-height wrapper */
 }
 
-/* CENTER: also horizontally center wrappers for all visible-counts without forcing height
-   (keeps the per-visible-count height/top/bottom rules intact for 3/4 images) */
-.stge--root[style*="--placement-mode: center"] .stge--area .stge--wrapper,
-.stge--root[style*="--placement-mode:center"] .stge--area .stge--wrapper {
+/* CENTER: horizontally center wrappers only for visible counts 1 and 2.
+   This preserves the per-count stacking rules used for 3/4 images. */
+.stge--root[style*="--placement-mode: center"][data-visible-count="1"] .stge--area .stge--wrapper,
+.stge--root[style*="--placement-mode:center"][data-visible-count="1"] .stge--area .stge--wrapper,
+.stge--root[style*="--placement-mode: center"][data-visible-count="2"] .stge--area .stge--wrapper,
+.stge--root[style*="--placement-mode:center"][data-visible-count="2"] .stge--area .stge--wrapper {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+/* CENTER: also horizontally center wrappers for visible counts 3 and 4 without changing heights
+   so stacked halves remain 50vh but are centered horizontally in their side-area. */
+.stge--root[style*="--placement-mode: center"][data-visible-count="3"] .stge--area .stge--wrapper,
+.stge--root[style*="--placement-mode:center"][data-visible-count="3"] .stge--area .stge--wrapper,
+.stge--root[style*="--placement-mode: center"][data-visible-count="4"] .stge--area .stge--wrapper,
+.stge--root[style*="--placement-mode:center"][data-visible-count="4"] .stge--area .stge--wrapper {
   left: 50% !important;
   transform: translateX(-50%) !important;
 }
