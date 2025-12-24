@@ -586,7 +586,7 @@ function updateSideSizes() {
     // update DOM area widths so appended wrappers are inside the correct side area
     if (leftArea) leftArea.style.width = `${leftSpace}px`;
     if (rightArea) rightArea.style.width = `${rightSpace}px`;
-    if (geVerboseLogging) log('updateSideSizes', { leftSpace, rightSpace });
+    if (geVerboseLogging) log('[NE] updateSideSizes', { leftSpace, rightSpace });
 }
 
 const chatChanged = async ()=>{
@@ -649,10 +649,10 @@ const messageRendered = async () => {
             // debug: print slots and wrapper state when verbose logging is enabled
             if (geVerboseLogging) {
                 try {
-                    log('messageRendered slots:', slots);
-                    log('wrappers:', imgs.map(w=>({ name: w.getAttribute('data-character'), attached: !!w.closest('.stge--root'), parent: w.parentElement?.className })));
-                    log('side widths (px):', { left: leftArea?.getBoundingClientRect?.().width, right: rightArea?.getBoundingClientRect?.().width });
-                } catch(e) { log('debug log error', e); }
+                    log('[NE] messageRendered slots:', slots);
+                    log('[NE] wrappers:', imgs.map(w=>({ name: w.getAttribute('data-character'), attached: !!w.closest('.stge--root'), parent: w.parentElement?.className })));
+                    log('[NE] side widths (px):', { left: leftArea?.getBoundingClientRect?.().width, right: rightArea?.getBoundingClientRect?.().width });
+                } catch(e) { log('[NE] debug log error', e); }
             }
 
             // Clean previous "last" markers
@@ -673,8 +673,14 @@ const messageRendered = async () => {
                         // 2 -> slot0 left, slot1 right
                         // 3 -> slot0 left full-height, slot1 top-right, slot2 bottom-right
                         // 4 -> slot0 top-left, slot1 bottom-left, slot2 top-right, slot3 bottom-right
-                        if (geVerboseLogging) log('placing wrapper', name, { slotIndex, slots });
                         const visibleCount = slots.length;
+                        if (geVerboseLogging) {
+                            log('[NE] placing wrapper', name, { slotIndex, visibleCount, slots, left, right });
+                            try {
+                                log('[NE] leftArea parent:', leftArea?.parentElement?.className, 'rightArea parent:', rightArea?.parentElement?.className);
+                                log('[NE] existing parents of wrapper:', wrapper.parentElement?.className);
+                            } catch(e) { log('[NE] placement debug error', e); }
+                        }
                         let targetArea = null;
                         if (visibleCount === 1) {
                             targetArea = leftArea;
@@ -687,19 +693,19 @@ const messageRendered = async () => {
                             // visibleCount >=4: distribute 0/1 -> left, 2/3 -> right
                             targetArea = (slotIndex <= 1) ? leftArea : rightArea;
                         }
+                        if (geVerboseLogging) log('[NE] chosen targetArea class:', targetArea?.className);
                         // append into appropriate side-area container so wrapper occupies the empty side-space rather than full viewport
-                        if (targetArea) {
+                        if (targetArea) targetArea.append(wrapper);
+                        // after appending, log parent and bounding rects to help diagnose positioning
+                        if (geVerboseLogging) {
                             try {
-                                targetArea.append(wrapper);
-                                if (geVerboseLogging) log('append succeeded', { name, parent: wrapper.parentElement?.className });
-                            } catch (e) {
-                                console.error('[NE] append error', e, { name, targetArea });
-                            }
-                        } else {
-                            if (geVerboseLogging) log('no targetArea for', name, { targetArea, visibleCount, slotIndex });
+                                log('[NE] appended wrapper parent now:', wrapper.parentElement?.className);
+                                log('[NE] wrapper rect:', wrapper.getBoundingClientRect());
+                                log('[NE] leftArea rect:', leftArea?.getBoundingClientRect());
+                                log('[NE] rightArea rect:', rightArea?.getBoundingClientRect());
+                            } catch(e) { log('[NE] post-append debug error', e); }
                         }
                         await delay(50);
-                        if (geVerboseLogging) log('post-append parent', wrapper.parentElement?.className);
                         wrapper.classList.remove('stge--exit');
                     }
                     wrapper.classList.remove('stge--hidden');
@@ -710,6 +716,7 @@ const messageRendered = async () => {
                     if (wrapper.closest('.stge--root')) {
                         wrapper.classList.add('stge--exit');
                         await delay(settings.transition + 150);
+                        if (geVerboseLogging) log('[NE] removing wrapper', name);
                         wrapper.remove();
                     } else {
                         // keep in memory but mark hidden
@@ -735,43 +742,20 @@ const messageRendered = async () => {
 
 
 
-const findImage = async (name, expression = null) => {
-    // prefer explicit expression if provided, else use default expression
-    const expr = expression ?? settings.expression;
-    // choose base path: if a chat-specific path is configured, use it; otherwise use top-level characters
-    const basePath = (csettings && csettings.path) ? `/characters/${csettings.path}` : '/characters';
+const findImage = async(name, expression = null) => {
     for (const ext of settings.extensions) {
-        const url = `${basePath}/${name}/${expr}.${ext}`;
-        if (geVerboseLogging) log('findImage trying', url);
-        try {
-            const resp = await fetch(url, {
-                method: 'HEAD',
-                headers: getRequestHeaders(),
-            });
-            if (geVerboseLogging) log('findImage HEAD', url, resp.status);
-            if (resp.ok) return url;
-        } catch (e) {
-            if (geVerboseLogging) console.warn('findImage fetch error', e, url);
+        const url = csettings.exclude ? `/characters/${csettings.path}/${name}/${expression ?? settings.expression}.${ext}` : `/characters/${name}/${expression ?? settings.expression}.${ext}`;
+        const resp = await fetch(url, {
+            method: 'HEAD',
+            headers: getRequestHeaders(),
+        });
+        if (resp.ok) {
+            return url;
         }
     }
-    // fallback: if an explicit expression was provided and it failed, try without expression
     if (expression && expression != settings.expression) {
-        return await findImage(name, null);
+        return await findImage(name);
     }
-    // additional fallback: try without chat-specific subpath if we tried that above
-    if (csettings && csettings.path) {
-        for (const ext of settings.extensions) {
-            const url = `/characters/${name}/${expr}.${ext}`;
-            if (geVerboseLogging) log('findImage trying fallback', url);
-            try {
-                const resp = await fetch(url, { method: 'HEAD', headers: getRequestHeaders() });
-                if (resp.ok) return url;
-            } catch (e) {
-                if (geVerboseLogging) console.warn('findImage fetch error', e, url);
-            }
-        }
-    }
-    return null;
 };
 let namesCount = -1;
 const updateMembers = async()=>{
@@ -847,32 +831,9 @@ const updateMembers = async()=>{
                     if (!tc?.isEnabled) {
                         tc = {};
                     }
-                    // Resolve image URL before creating the DOM wrapper. If nothing is found,
-                    // treat the character as absent and do not create a wrapper for it.
-                    const resolvedSrc = await findImage(tc?.costumes?.[name] ?? name, csettings[name]?.emote);
-                    if (!resolvedSrc) {
-                        // remove the provisional nameList entry added earlier
-                        const nidx = nameList.indexOf(name);
-                        if (nidx > -1) nameList.splice(nidx, 1);
-                        // remove from left/right queues if present
-                        const li = left.indexOf(name); if (li > -1) left.splice(li, 1);
-                        const ri = right.indexOf(name); if (ri > -1) right.splice(ri, 1);
-                        if (current === name) current = null;
-                        console.warn('[NE] findImage did not return a URL for (skipping)', name, { costume: tc?.costumes?.[name], emote: csettings[name]?.emote });
-                        continue; // skip wrapper creation for this character
-                    }
-                    img.src = resolvedSrc;
+                    img.src = await findImage(tc?.costumes?.[name] ?? name, csettings[name]?.emote);
                     wrap.append(img);
-                    if (geVerboseLogging) {
-                        log('created wrapper for', name, 'src', img.src);
-                        try {
-                            const wrapRect = wrap.getBoundingClientRect();
-                            const imgRect = img.getBoundingClientRect();
-                            const wrapStyle = getComputedStyle(wrap);
-                            const imgStyle = getComputedStyle(img);
-                            log('created wrapper metrics', { name, wrapRect, imgRect, wrapStyle: { position: wrapStyle.position, top: wrapStyle.top, left: wrapStyle.left, width: wrapStyle.width, height: wrapStyle.height }, imgStyle: { width: imgStyle.width, height: imgStyle.height, objectFit: imgStyle.objectFit } });
-                        } catch(e) { log('created wrapper metrics error', e); }
-                    }
+                    if (geVerboseLogging) log('[NE] created wrapper for', name, 'src', img.src);
                 }
             }
         }
