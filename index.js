@@ -491,12 +491,22 @@ const chatChanged = async ()=>{
     }, chat_metadata.groupExpressions ?? {});
     chat_metadata.groupExpressions = csettings;
     log(chat_metadata);
-    document.querySelector('#stne--path').disabled = context.chatId == null;
-    document.querySelector('#stne--path').value = csettings.path ?? '';
-    document.querySelector('#stne--exclude').disabled = context.chatId == null;
-    document.querySelector('#stne--exclude').value = csettings.exclude?.join(', ') ?? '';
-    document.querySelector('#stne--members').disabled = context.chatId == null;
-    document.querySelector('#stne--members').value = csettings.members?.join(', ') ?? '';
+    // Safely update chat-scoped inputs only if they exist in the DOM
+    const pathEl = document.querySelector('#stne--path');
+    if (pathEl) {
+        pathEl.disabled = context.chatId == null;
+        pathEl.value = csettings.path ?? '';
+    }
+    const excludeEl = document.querySelector('#stne--exclude');
+    if (excludeEl) {
+        excludeEl.disabled = context.chatId == null;
+        excludeEl.value = csettings.exclude?.join(', ') ?? '';
+    }
+    const membersEl = document.querySelector('#stne--members');
+    if (membersEl) {
+        membersEl.disabled = context.chatId == null;
+        membersEl.value = csettings.members?.join(', ') ?? '';
+    }
     await restart();
 };
 
@@ -801,6 +811,8 @@ const end = ()=>{
 const init = ()=>{
     log('init');
     initSettings();
+    // Ensure chat-scoped inputs reflect the current context immediately after settings are initialized
+    try { chatChanged(); } catch(e) { console.error('[NE] chatChanged init call failed', e); }
     mo = new MutationObserver(async(muts)=>{
         if (busy) return;
         const lastCharMes = chat.toReversed().find(it=>!it.is_user && !it.is_system && nameList.find(o=>it.name == o));
