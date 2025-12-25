@@ -283,21 +283,18 @@
   width: 100% !important; /* fill the available area width */
   height: auto !important; /* height driven by image aspect ratio */
   margin: 0 !important;
+  flex: 0 1 auto !important; /* allow shrinking so multiple stacked wrappers fit vertically */
+  max-height: 100% !important; /* never exceed the containing area's height */
+  box-sizing: border-box;
 }
 
-/* Ensure images fill wrapper width and keep their aspect ratio */
+/* Ensure images fill wrapper width and keep their aspect ratio; but never exceed their wrapper/area height */
 .stne--root[style*="--placement-mode: width"] .stne--area .stne--img,
 .stne--root[style*="--placement-mode:width"] .stne--area .stne--wrapper .stne--img {
   width: 100% !important;
   height: auto !important;
+  max-height: 100% !important; /* scale down vertically when needed to avoid cropping */
   object-fit: contain;
-}
-
-/* Limit max-height so when multiple stacked images exist they don't grow excessively tall
-   while preserving typical aspect ratios. This keeps them visually balanced (two stacked images
-   will typically be at most ~45vh each but will shrink naturally with their intrinsic aspect). */
-.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper {
-  max-height: 90vh; /* generous cap; individual images remain auto-height within this */
 }
 
 /* Small safety: when multiple wrappers are adjacent ensure they center horizontally */
