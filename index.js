@@ -170,12 +170,22 @@ async function getPresentOrderedNames(lastMes, nameList) {
             else exists.forced = true;
         }
     }
+    const strategy = settings?.orderingStrategy ?? 'first-appearance';
     items.sort((a, b) => {
-        if (b.count !== a.count) return b.count - a.count;
-        const ai = a.firstIndex == null ? Infinity : a.firstIndex;
-        const bi = b.firstIndex == null ? Infinity : b.firstIndex;
-        if (ai !== bi) return ai - bi;
-        return a.masterIndex - b.masterIndex;
+        if (strategy === 'count') {
+            if (b.count !== a.count) return b.count - a.count;
+            const ai = a.firstIndex == null ? Infinity : a.firstIndex;
+            const bi = b.firstIndex == null ? Infinity : b.firstIndex;
+            if (ai !== bi) return ai - bi;
+            return a.masterIndex - b.masterIndex;
+        } else { // 'first-appearance' (default) - order by earliest unbracketed occurrence
+            const ai = a.firstIndex == null ? Infinity : a.firstIndex;
+            const bi = b.firstIndex == null ? Infinity : b.firstIndex;
+            if (ai !== bi) return ai - bi;
+            // fallback to count desc then masterIndex to stabilize ordering
+            if (b.count !== a.count) return b.count - a.count;
+            return a.masterIndex - b.masterIndex;
+        }
     });
     // Debug log: ordered items after sorting
     if (geVerboseLogging) log('orderedItems', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
@@ -277,6 +287,7 @@ const initSettings = () => {
         position: 0,
         positionSingle: 100,
         placementMode: 'center', // new setting: 'center' (full-height centered) or 'width' (scale by available width)
+        orderingStrategy: 'first-appearance', // 'count' = order by occurrence count (legacy), 'first-appearance' = order by earliest unbracketed appearance
     }, extension_settings.groupExpressions ?? {});
     extension_settings.groupExpressions = settings;
 
@@ -331,6 +342,15 @@ const initSettings = () => {
                         <select class="text_pole" id="stge--placementMode">
                             <option value="center">Center (full height - default)</option>
                             <option value="width">Width (scale to available side width)</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="flex-container">
+                    <label>
+                        Ordering strategy
+                        <select class="text_pole" id="stge--orderingStrategy">
+                            <option value="first-appearance">First appearance (default)</option>
+                            <option value="count">Count (legacy)</option>
                         </select>
                     </label>
                 </div>
@@ -462,6 +482,13 @@ const initSettings = () => {
             // update side sizes/areas immediately so image wrappers move to correct containers
             updateSideSizes();
         }
+    });
+    // initialize ordering strategy selector value
+    const orderingSel = document.querySelector('#stge--orderingStrategy');
+    if (orderingSel) orderingSel.value = settings.orderingStrategy ?? 'first-appearance';
+    orderingSel?.addEventListener('change', ()=>{
+        settings.orderingStrategy = document.querySelector('#stge--orderingStrategy').value;
+        saveSettingsDebounced();
     });
 
     document.querySelector('#stge--numLeft').addEventListener('input', ()=>{
