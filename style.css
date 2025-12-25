@@ -1,5 +1,5 @@
 /* ROOT: Full screen overlay BEHIND the chat */
-.stge--root {
+.stne--root {
   position: fixed !important;
   inset: 0;
   width: 100vw !important;
@@ -11,7 +11,7 @@
 }
 
 /* WRAPPERS: Common logic for all images */
-.stge--wrapper {
+.stne--wrapper {
   position: absolute !important;
   height: 50vh !important; /* Forces each image to be half the screen height */
   width: auto !important;  /* Width scales naturally based on aspect ratio */
@@ -25,7 +25,7 @@
 }
 
 /* IMAGE: Ensure it fills the wrapper */
-.stge--img {
+.stne--img {
   height: 100% !important;
   width: auto !important;
   object-fit: contain;
@@ -35,48 +35,48 @@
 /* --- CORNER POSITIONS --- */
 
 /* Image 1: Top Left */
-.stge--wrapper[style*="--order: 0"], 
-.stge--wrapper[style*="--order:0"] {
+.stne--wrapper[style*="--order: 0"], 
+.stne--wrapper[style*="--order:0"] {
   top: 0;
   left: 0;
   transform-origin: top left;
 }
 
 /* Image 2: Bottom Left */
-.stge--wrapper[style*="--order: 1"], 
-.stge--wrapper[style*="--order:1"] {
+.stne--wrapper[style*="--order: 1"], 
+.stne--wrapper[style*="--order:1"] {
   bottom: 0;
   left: 0;
   transform-origin: bottom left;
 }
 
 /* Image 3: Top Right */
-.stge--wrapper[style*="--order: 2"], 
-.stge--wrapper[style*="--order:2"] {
+.stne--wrapper[style*="--order: 2"], 
+.stne--wrapper[style*="--order:2"] {
   top: 0;
   right: 0;
   transform-origin: top right;
 }
 
 /* Image 4: Bottom Right */
-.stge--wrapper[style*="--order: 3"], 
-.stge--wrapper[style*="--order:3"] {
+.stne--wrapper[style*="--order: 3"], 
+.stne--wrapper[style*="--order:3"] {
   bottom: 0;
   right: 0;
   transform-origin: bottom right;
 }
 
 /* Hide any extra images (Order 4+) */
-.stge--wrapper[style*="--order: 4"],
-.stge--wrapper[style*="--order: 5"] {
+.stne--wrapper[style*="--order: 4"],
+.stne--wrapper[style*="--order: 5"] {
   display: none;
 }
 
 /* Layout adjustments for different visible counts */
 
 /* 1 image: use full height on the left for slot 0 */
-.stge--root[data-visible-count="1"] .stge--wrapper[style*="--order: 0"],
-.stge--root[data-visible-count="1"] .stge--wrapper[style*="--order:0"] {
+.stne--root[data-visible-count="1"] .stne--wrapper[style*="--order: 0"],
+.stne--root[data-visible-count="1"] .stne--wrapper[style*="--order:0"] {
   height: 100vh !important;
   top: 0 !important;
   bottom: 0 !important;
@@ -86,8 +86,8 @@
 }
 
 /* 2 images: slot 0 full-left, slot 1 full-right */
-.stge--root[data-visible-count="2"] .stge--wrapper[style*="--order: 0"],
-.stge--root[data-visible-count="2"] .stge--wrapper[style*="--order:0"] {
+.stne--root[data-visible-count="2"] .stne--wrapper[style*="--order: 0"],
+.stne--root[data-visible-count="2"] .stne--wrapper[style*="--order:0"] {
   height: 100vh !important;
   top: 0 !important;
   bottom: 0 !important;
@@ -95,8 +95,8 @@
   right: auto !important;
   transform-origin: center left;
 }
-.stge--root[data-visible-count="2"] .stge--wrapper[style*="--order: 1"],
-.stge--root[data-visible-count="2"] .stge--wrapper[style*="--order:1"] {
+.stne--root[data-visible-count="2"] .stne--wrapper[style*="--order: 1"],
+.stne--root[data-visible-count="2"] .stne--wrapper[style*="--order:1"] {
   height: 100vh !important;
   top: 0 !important;
   bottom: 0 !important;
@@ -108,8 +108,8 @@
 /* 3 images: slot 0 full-left; slots 1 and 2 are half-height on the right (top and bottom)
    Note: this intentionally remaps the visual placement for slots 1/2 when 3 images are visible
 */
-.stge--root[data-visible-count="3"] .stge--wrapper[style*="--order: 0"],
-.stge--root[data-visible-count="3"] .stge--wrapper[style*="--order:0"] {
+.stne--root[data-visible-count="3"] .stne--wrapper[style*="--order: 0"],
+.stne--root[data-visible-count="3"] .stne--wrapper[style*="--order:0"] {
   height: 100vh !important;
   top: 0 !important;
   bottom: 0 !important;
@@ -118,8 +118,8 @@
   transform-origin: center left;
 }
 /* place order:1 at top-right half */
-.stge--root[data-visible-count="3"] .stge--wrapper[style*="--order: 1"],
-.stge--root[data-visible-count="3"] .stge--wrapper[style*="--order:1"] {
+.stne--root[data-visible-count="3"] .stne--wrapper[style*="--order: 1"],
+.stne--root[data-visible-count="3"] .stne--wrapper[style*="--order:1"] {
   height: 50vh !important;
   top: 0 !important;
   right: 0 !important;
@@ -128,8 +128,8 @@
   transform-origin: top right;
 }
 /* place order:2 at bottom-right half */
-.stge--root[data-visible-count="3"] .stge--wrapper[style*="--order: 2"],
-.stge--root[data-visible-count="3"] .stge--wrapper[style*="--order:2"] {
+.stne--root[data-visible-count="3"] .stne--wrapper[style*="--order: 2"],
+.stne--root[data-visible-count="3"] .stne--wrapper[style*="--order:2"] {
   height: 50vh !important;
   bottom: 0 !important;
   right: 0 !important;
@@ -139,31 +139,31 @@
 }
 
 /* --- NEW: Area containers for left/right placements --- */
-/* .stge--area: general container (absolute) that spans the root vertically.
-   .stge--left-area / .stge--right-area: anchored to left/right with widths
-   controlled by CSS variables (--left-space / --right-space) set inline on .stge--root.
+/* .stne--area: general container (absolute) that spans the root vertically.
+   .stne--left-area / .stne--right-area: anchored to left/right with widths
+   controlled by CSS variables (--left-space / --right-space) set inline on .stne--root.
    These areas are pointer-events:none so the overlay remains click-through. */
-.stge--area {
+.stne--area {
   position: absolute;
   top: 0;
   bottom: 0;
   pointer-events: none;
   overflow: visible; /* allow wrappers/images to overflow the area */
-  z-index: inherit; /* keep stacking consistent with .stge--root */
+  z-index: inherit; /* keep stacking consistent with .stne--root */
 }
 
 /* Left and right anchors use the inline CSS variables provided by index.js */
-.stge--left-area {
+.stne--left-area {
   left: 0;
   width: var(--left-space, 0px);
 }
-.stge--right-area {
+.stne--right-area {
   right: 0;
   width: var(--right-space, 0px);
 }
 
 /* --- Placement modes: center vs width ---
-   These rules only apply when the inline style on .stge--root contains
+   These rules only apply when the inline style on .stne--root contains
    --placement-mode: center (or width). Using attribute selectors ensures
    default behavior remains unchanged when --placement-mode is not set. */
 
@@ -171,10 +171,10 @@
    - For visible counts 1 and 2 we want full-height wrappers centered inside each side-area.
    - For 3/4 images we must NOT override the per-count height rules (50vh) used for stacking.
    The selectors below apply the full-height centering only when the root's data-visible-count is 1 or 2. */
-.stge--root[style*="--placement-mode: center"][data-visible-count="1"] .stge--area .stge--wrapper,
-.stge--root[style*="--placement-mode:center"][data-visible-count="1"] .stge--area .stge--wrapper,
-.stge--root[style*="--placement-mode: center"][data-visible-count="2"] .stge--area .stge--wrapper,
-.stge--root[style*="--placement-mode:center"][data-visible-count="2"] .stge--area .stge--wrapper {
+.stne--root[style*="--placement-mode: center"][data-visible-count="1"] .stne--area .stne--wrapper,
+.stne--root[style*="--placement-mode:center"][data-visible-count="1"] .stne--area .stne--wrapper,
+.stne--root[style*="--placement-mode: center"][data-visible-count="2"] .stne--area .stne--wrapper,
+.stne--root[style*="--placement-mode:center"][data-visible-count="2"] .stne--area .stne--wrapper {
   height: 100vh !important;
   top: 0 !important;
   bottom: 0 !important;
@@ -183,10 +183,10 @@
   transform: translateX(-50%) !important; /* horizontally center */
   width: auto !important; /* keep width determined by aspect ratio */
 }
-.stge--root[style*="--placement-mode: center"][data-visible-count="1"] .stge--area .stge--img,
-.stge--root[style*="--placement-mode:center"][data-visible-count="1"] .stge--area .stge--img,
-.stge--root[style*="--placement-mode: center"][data-visible-count="2"] .stge--area .stge--img,
-.stge--root[style*="--placement-mode:center"][data-visible-count="2"] .stge--area .stge--img {
+.stne--root[style*="--placement-mode: center"][data-visible-count="1"] .stne--area .stne--img,
+.stne--root[style*="--placement-mode:center"][data-visible-count="1"] .stne--area .stne--img,
+.stne--root[style*="--placement-mode: center"][data-visible-count="2"] .stne--area .stne--img,
+.stne--root[style*="--placement-mode:center"][data-visible-count="2"] .stne--area .stne--img {
   height: 100% !important;
   width: auto !important;
   object-fit: contain; /* ensure image fits within full-height wrapper */
@@ -194,20 +194,20 @@
 
 /* CENTER: horizontally center wrappers only for visible counts 1 and 2.
    This preserves the per-count stacking rules used for 3/4 images. */
-.stge--root[style*="--placement-mode: center"][data-visible-count="1"] .stge--area .stge--wrapper,
-.stge--root[style*="--placement-mode:center"][data-visible-count="1"] .stge--area .stge--wrapper,
-.stge--root[style*="--placement-mode: center"][data-visible-count="2"] .stge--area .stge--wrapper,
-.stge--root[style*="--placement-mode:center"][data-visible-count="2"] .stge--area .stge--wrapper {
+.stne--root[style*="--placement-mode: center"][data-visible-count="1"] .stne--area .stne--wrapper,
+.stne--root[style*="--placement-mode:center"][data-visible-count="1"] .stne--area .stne--wrapper,
+.stne--root[style*="--placement-mode: center"][data-visible-count="2"] .stne--area .stne--wrapper,
+.stne--root[style*="--placement-mode:center"][data-visible-count="2"] .stne--area .stne--wrapper {
   left: 50% !important;
   transform: translateX(-50%) !important;
 }
 
 /* CENTER: also horizontally center wrappers for visible counts 3 and 4 without changing heights
    so stacked halves remain 50vh but are centered horizontally in their side-area. */
-.stge--root[style*="--placement-mode: center"][data-visible-count="3"] .stge--area .stge--wrapper,
-.stge--root[style*="--placement-mode:center"][data-visible-count="3"] .stge--area .stge--wrapper,
-.stge--root[style*="--placement-mode: center"][data-visible-count="4"] .stge--area .stge--wrapper,
-.stge--root[style*="--placement-mode:center"][data-visible-count="4"] .stge--area .stge--wrapper {
+.stne--root[style*="--placement-mode: center"][data-visible-count="3"] .stne--area .stne--wrapper,
+.stne--root[style*="--placement-mode:center"][data-visible-count="3"] .stne--area .stne--wrapper,
+.stne--root[style*="--placement-mode: center"][data-visible-count="4"] .stne--area .stne--wrapper,
+.stne--root[style*="--placement-mode:center"][data-visible-count="4"] .stne--area .stne--wrapper {
   left: 50% !important;
   transform: translateX(-50%) !important;
 }
@@ -215,8 +215,8 @@
 /* WIDTH mode:
    - Wrappers and images size to the available area width, maintaining aspect ratio
    - Enforce width:100% and height:auto on both wrapper and img */
-.stge--root[style*="--placement-mode: width"] .stge--area .stge--wrapper,
-.stge--root[style*="--placement-mode:width"] .stge--area .stge--wrapper {
+.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper,
+.stne--root[style*="--placement-mode:width"] .stne--area .stne--wrapper {
   width: 100% !important; /* fill the area width */
   height: auto !important; /* height driven by image aspect ratio */
   left: 0 !important;
@@ -225,8 +225,8 @@
   bottom: auto;
   transform: none !important;
 }
-.stge--root[style*="--placement-mode: width"] .stge--area .stge--img,
-.stge--root[style*="--placement-mode:width"] .stge--area .stge--img {
+.stne--root[style*="--placement-mode: width"] .stne--area .stne--img,
+.stne--root[style*="--placement-mode:width"] .stne--area .stne--img {
   width: 100% !important;
   height: auto !important;
   object-fit: contain;
@@ -241,8 +241,8 @@
    This block increases specificity by matching the wrapper's --order style substring and is placed
    after all other rules so it reliably overrides the per-slot positioning. It also sets a neutral
    transform-origin so translations and scaling behave consistently on both sides. */
-.stge--root[style*="--placement-mode: center"] .stge--area .stge--wrapper[style*="--order:"] ,
-.stge--root[style*="--placement-mode:center"] .stge--area .stge--wrapper[style*="--order:"] {
+.stne--root[style*="--placement-mode: center"] .stne--area .stne--wrapper[style*="--order:"] ,
+.stne--root[style*="--placement-mode:center"] .stne--area .stne--wrapper[style*="--order:"] {
   left: 50% !important;
   right: auto !important;
   transform: translateX(-50%) !important;
@@ -250,8 +250,8 @@
 }
 
 /* Ensure images inside the centered wrappers also use full-height when applicable */
-.stge--root[style*="--placement-mode: center"][data-visible-count="1"] .stge--area .stge--wrapper[style*="--order:"] .stge--img,
-.stge--root[style*="--placement-mode:center"][data-visible-count="2"] .stge--area .stge--wrapper[style*="--order:"] .stge--img {
+.stne--root[style*="--placement-mode: center"][data-visible-count="1"] .stne--area .stne--wrapper[style*="--order:"] .stne--img,
+.stne--root[style*="--placement-mode:center"][data-visible-count="2"] .stne--area .stne--wrapper[style*="--order:"] .stne--img {
   height: 100% !important;
   width: auto !important;
   object-fit: contain !important;

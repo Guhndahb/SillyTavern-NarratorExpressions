@@ -257,7 +257,7 @@ let busy = false;
 let mo;
 
 const updateSettingsBackground = ()=>{
-    const drawer = document.querySelector('.stge--settings .inline-drawer-content');
+    const drawer = document.querySelector('.stne--settings .inline-drawer-content');
     if (drawer && drawer.getBoundingClientRect().height > 0 && settings.transparentMenu) {
         document.querySelector('#rm_extensions_block').style.background = 'rgba(0 0 0 / 0.5)';
     } else {
@@ -277,7 +277,7 @@ const initSettings = () => {
     extension_settings.groupExpressions = settings;
 
     const html = `
-    <div class="stge--settings">
+    <div class="stne--settings">
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
                 <b>Narrator Expressions</b>
@@ -286,20 +286,20 @@ const initSettings = () => {
             <div class="inline-drawer-content" style="font-size:small;">
                 <div class="flex-container">
                     <label class="checkbox_label">
-                        <input type="checkbox" id="stge--isEnabled" ${settings.isEnabled ? 'checked' : ''}>
+                        <input type="checkbox" id="stne--isEnabled" ${settings.isEnabled ? 'checked' : ''}>
                         Enable narrator expressions
                     </label>
                 </div>
                 <div class="flex-container">
                     <label class="checkbox_label">
-                        <input type="checkbox" id="stge--transparentMenu" ${settings.transparentMenu ? 'checked' : ''}>
+                        <input type="checkbox" id="stne--transparentMenu" ${settings.transparentMenu ? 'checked' : ''}>
                         Transparent settings menu
                     </label>
                 </div>
                 <div class="flex-container">
                     <label>
                         Placement mode
-                        <select class="text_pole" id="stge--placementMode">
+                        <select class="text_pole" id="stne--placementMode">
                             <option value="center">Center (full height - default)</option>
                             <option value="width">Width (scale to available side width)</option>
                         </select>
@@ -308,7 +308,7 @@ const initSettings = () => {
                 <div class="flex-container">
                     <label>
                         Ordering strategy
-                        <select class="text_pole" id="stge--orderingStrategy">
+                        <select class="text_pole" id="stne--orderingStrategy">
                             <option value="first-appearance">First appearance</option>
                             <option value="count">Count</option>
                         </select>
@@ -317,31 +317,31 @@ const initSettings = () => {
                 <div class="flex-container">
                     <label>
                         Chat path <small>(extra directory under /characters/, <strong>saved in chat</strong>)</small>
-                        <input type="text" class="text_pole" id="stge--path" placeholder="Alice&Friends" value="" disabled>
+                        <input type="text" class="text_pole" id="stne--path" placeholder="Alice&Friends" value="" disabled>
                     </label>
                 </div>
                 <div class="flex-container">
                     <label>
                         Characters to exclude <small>(comma separated list of names, <strong>saved in chat</strong>)</small>
-                        <input type="text" class="text_pole" id="stge--exclude" placeholder="Alice, Bob, Carol" value="" disabled>
+                        <input type="text" class="text_pole" id="stne--exclude" placeholder="Alice, Bob, Carol" value="" disabled>
                     </label>
                 </div>
                 <div class="flex-container">
                     <label>
                         Custom character list <small>(comma separated list of names, <strong>saved in chat</strong>)</small>
-                        <input type="text" class="text_pole" id="stge--members" placeholder="Alice, Bob, Carol" value="" disabled>
+                        <input type="text" class="text_pole" id="stne--members" placeholder="Alice, Bob, Carol" value="" disabled>
                     </label>
                 </div>
                 <div class="flex-container">
                     <label>
                         File extensions <small>(comma-separated list, e.g. <code>png,gif,webp</code>)</small>
-                        <input type="text" class="text_pole" id="stge--extensions" value="${settings.extensions.join(',')}">
+                        <input type="text" class="text_pole" id="stne--extensions" value="${settings.extensions.join(',')}">
                     </label>
                 </div>
                 <div class="flex-container">
                     <label>
                         Default expression to be used
-                        <select class="text_pole" id="stge--expression"></select>
+                        <select class="text_pole" id="stne--expression"></select>
                     </label>
                 </div>
             </div>
@@ -352,22 +352,22 @@ const initSettings = () => {
     window.addEventListener('click', ()=>{
         updateSettingsBackground();
     });
-    document.querySelector('#stge--isEnabled').addEventListener('click', ()=>{
-        settings.isEnabled = document.querySelector('#stge--isEnabled').checked;
+    document.querySelector('#stne--isEnabled').addEventListener('click', ()=>{
+        settings.isEnabled = document.querySelector('#stne--isEnabled').checked;
         saveSettingsDebounced();
         restart();
     });
-    document.querySelector('#stge--transparentMenu').addEventListener('click', ()=>{
-        settings.transparentMenu = document.querySelector('#stge--transparentMenu').checked;
+    document.querySelector('#stne--transparentMenu').addEventListener('click', ()=>{
+        settings.transparentMenu = document.querySelector('#stne--transparentMenu').checked;
         saveSettingsDebounced();
     });
 
     // initialize placement mode selector value
-    const placementSel = document.querySelector('#stge--placementMode');
+    const placementSel = document.querySelector('#stne--placementMode');
     if (placementSel) placementSel.value = settings.placementMode;
     placementSel?.addEventListener('change', ()=>{
         // save setting, debounce, and immediately update UI via CSS variables without restarting
-        settings.placementMode = document.querySelector('#stge--placementMode').value;
+        settings.placementMode = document.querySelector('#stne--placementMode').value;
         saveSettingsDebounced();
         if (root) {
             root.style.setProperty('--placement-mode', settings.placementMode);
@@ -376,34 +376,34 @@ const initSettings = () => {
         }
     });
     // initialize ordering strategy selector value
-    const orderingSel = document.querySelector('#stge--orderingStrategy');
+    const orderingSel = document.querySelector('#stne--orderingStrategy');
     if (orderingSel) orderingSel.value = settings.orderingStrategy ?? 'first-appearance';
     orderingSel?.addEventListener('change', ()=>{
-        settings.orderingStrategy = document.querySelector('#stge--orderingStrategy').value;
+        settings.orderingStrategy = document.querySelector('#stne--orderingStrategy').value;
         saveSettingsDebounced();
     });
 
-    document.querySelector('#stge--path').addEventListener('input', ()=>{
-        csettings.path = document.querySelector('#stge--path').value;
+    document.querySelector('#stne--path').addEventListener('input', ()=>{
+        csettings.path = document.querySelector('#stne--path').value;
         chat_metadata.groupExpressions = csettings;
         saveMetadataDebounced();
     });
-    document.querySelector('#stge--exclude').addEventListener('input', ()=>{
-        csettings.exclude = document.querySelector('#stge--exclude').value.toLowerCase().split(/\s*,\s*/).filter(it=>it.length);
+    document.querySelector('#stne--exclude').addEventListener('input', ()=>{
+        csettings.exclude = document.querySelector('#stne--exclude').value.toLowerCase().split(/\s*,\s*/).filter(it=>it.length);
         chat_metadata.groupExpressions = csettings;
         saveMetadataDebounced();
     });
-    document.querySelector('#stge--members').addEventListener('input', ()=>{
-        csettings.members = document.querySelector('#stge--members').value.split(/\s*,\s*/).filter(it=>it.length);
+    document.querySelector('#stne--members').addEventListener('input', ()=>{
+        csettings.members = document.querySelector('#stne--members').value.split(/\s*,\s*/).filter(it=>it.length);
         chat_metadata.groupExpressions = csettings;
         saveMetadataDebounced();
     });
-    document.querySelector('#stge--extensions').addEventListener('input', ()=>{
-        settings.extensions = document.querySelector('#stge--extensions').value?.split(/,\s*/);
+    document.querySelector('#stne--extensions').addEventListener('input', ()=>{
+        settings.extensions = document.querySelector('#stne--extensions').value?.split(/,\s*/);
         saveSettingsDebounced();
         restart();
     });
-    const sel = document.querySelector('#stge--expression');
+    const sel = document.querySelector('#stne--expression');
     const exp = [
         'admiration',
         'amusement',
@@ -491,12 +491,12 @@ const chatChanged = async ()=>{
     }, chat_metadata.groupExpressions ?? {});
     chat_metadata.groupExpressions = csettings;
     log(chat_metadata);
-    document.querySelector('#stge--path').disabled = context.chatId == null;
-    document.querySelector('#stge--path').value = csettings.path ?? '';
-    document.querySelector('#stge--exclude').disabled = context.chatId == null;
-    document.querySelector('#stge--exclude').value = csettings.exclude?.join(', ') ?? '';
-    document.querySelector('#stge--members').disabled = context.chatId == null;
-    document.querySelector('#stge--members').value = csettings.members?.join(', ') ?? '';
+    document.querySelector('#stne--path').disabled = context.chatId == null;
+    document.querySelector('#stne--path').value = csettings.path ?? '';
+    document.querySelector('#stne--exclude').disabled = context.chatId == null;
+    document.querySelector('#stne--exclude').value = csettings.exclude?.join(', ') ?? '';
+    document.querySelector('#stne--members').disabled = context.chatId == null;
+    document.querySelector('#stne--members').value = csettings.members?.join(', ') ?? '';
     await restart();
 };
 
@@ -534,13 +534,13 @@ const messageRendered = async () => {
             if (geVerboseLogging) {
                 try {
                     log('messageRendered slots:', slots);
-                    log('wrappers:', imgs.map(w=>({ name: w.getAttribute('data-character'), attached: !!w.closest('.stge--root'), parent: w.parentElement?.className })));
+                    log('wrappers:', imgs.map(w=>({ name: w.getAttribute('data-character'), attached: !!w.closest('.stne--root'), parent: w.parentElement?.className })));
                     log('side widths (px):', { left: leftArea?.getBoundingClientRect?.().width, right: rightArea?.getBoundingClientRect?.().width });
                 } catch(e) { log('debug log error', e); }
             }
 
             // Clean previous "last" markers
-            imgs.filter(it=>it.classList.contains('stge--last')).forEach(it=>it.classList.remove('stge--last'));
+            imgs.filter(it=>it.classList.contains('stne--last')).forEach(it=>it.classList.remove('stne--last'));
 
             // Show/hide and assign slot ordering
             for (const wrapper of imgs) {
@@ -566,29 +566,29 @@ const messageRendered = async () => {
                     if (geVerboseLogging) log('chosen targetArea class:', targetArea?.className);
                     // Only move DOM node if it's not already in the correct area
                     if (wrapper.parentElement !== targetArea) {
-                        wrapper.classList.add('stge--exit');
+                        wrapper.classList.add('stne--exit');
                         if (geVerboseLogging) {
                             try { log('pre-move', { name, from: wrapper.parentElement?.className, to: targetArea?.className }); } catch(e) { log('pre-move log err', e); }
                         }
                         targetArea?.append(wrapper);
                         await delay(50);
-                        wrapper.classList.remove('stge--exit');
+                        wrapper.classList.remove('stne--exit');
                         if (geVerboseLogging) {
                             try { log('moved', { name, parent: wrapper.parentElement?.className, wrapperRect: wrapper.getBoundingClientRect() }); } catch(e) { log('post-move log err', e); }
                         }
                     }
-                    wrapper.classList.remove('stge--hidden');
+                    wrapper.classList.remove('stne--hidden');
                 } else {
                     // hide it
                     wrapper.style.removeProperty('--order');
                     // if currently attached to root (or one of its side areas), animate exit and remove from DOM (element object remains in imgs)
-                    if (wrapper.closest('.stge--root')) {
-                        wrapper.classList.add('stge--exit');
+                    if (wrapper.closest('.stne--root')) {
+                        wrapper.classList.add('stne--exit');
                         if (geVerboseLogging) log('removing wrapper', name);
                         wrapper.remove();
                     } else {
                         // keep in memory but mark hidden
-                        wrapper.classList.add('stge--hidden');
+                        wrapper.classList.add('stne--hidden');
                     }
                 }
             }
@@ -597,8 +597,8 @@ const messageRendered = async () => {
             if (lastMes?.is_user === false) {
                 const primary = slots[0];
                 if (primary && lastCharMes && primary === lastCharMes.name) {
-                    const wrap = imgs.find(it=>it.getAttribute('data-character') == primary && it.closest('.stge--root'));
-                    if (wrap) wrap.classList.add('stge--last');
+                    const wrap = imgs.find(it=>it.getAttribute('data-character') == primary && it.closest('.stne--root'));
+                    if (wrap) wrap.classList.add('stne--last');
                 }
             }
         }
@@ -647,7 +647,7 @@ const updateMembers = async()=>{
             const img = imgs.splice(idx, 1)[0];
             // reset current if it was this name
             if (current === name) current = null;
-            img.classList.add('stge--exit');
+            img.classList.add('stne--exit');
             img.remove();
         }
         for (const name of added) {
@@ -657,10 +657,10 @@ const updateMembers = async()=>{
             }
             const wrap = document.createElement('div'); {
                 imgs.push(wrap);
-                wrap.classList.add('stge--wrapper');
+                wrap.classList.add('stne--wrapper');
                 wrap.setAttribute('data-character', name);
                 const img = document.createElement('img'); {
-                    img.classList.add('stge--img');
+                    img.classList.add('stne--img');
                     let tc = chat_metadata.triggerCards ?? {};
                     if (!tc?.isEnabled) {
                         tc = {};
@@ -733,7 +733,7 @@ const start = async()=>{
     log('start');
     document.querySelector('#expression-wrapper').style.opacity = '0';
     root = document.createElement('div'); {
-        root.classList.add('stge--root');
+        root.classList.add('stne--root');
         root.style.setProperty('--placement-mode', settings.placementMode);
         document.body.append(root);
     }
@@ -741,7 +741,7 @@ const start = async()=>{
     // These containers receive wrapper elements so they occupy only the empty space beside the centered chatbox.
     leftArea = document.createElement('div');
     // give container both the generic area class and the left-specific class so CSS rules apply
-    leftArea.classList.add('stge--area', 'stge--left-area');
+    leftArea.classList.add('stne--area', 'stne--left-area');
     leftArea.style.position = 'absolute';
     leftArea.style.left = '0';
     leftArea.style.top = '0';
@@ -752,7 +752,7 @@ const start = async()=>{
 
     rightArea = document.createElement('div');
     // give container both the generic area class and the right-specific class so CSS rules apply
-    rightArea.classList.add('stge--area', 'stge--right-area');
+    rightArea.classList.add('stne--area', 'stne--right-area');
     rightArea.style.position = 'absolute';
     rightArea.style.right = '0';
     rightArea.style.top = '0';
@@ -814,7 +814,7 @@ const init = ()=>{
             const parts = src.split('/');
             const name = parts.slice(parts.indexOf('characters') + 1, -1).map(it=>decodeURIComponent(it));
             if (csettings.emotes[name[0]]?.isLocked) return;
-            const img = imgs.find(it=>it.getAttribute('data-character') == name[0])?.querySelector('.stge--img');
+            const img = imgs.find(it=>it.getAttribute('data-character') == name[0])?.querySelector('.stne--img');
             if (img) {
                 let tc = chat_metadata.triggerCards ?? {};
                 if (!tc?.isEnabled) {
@@ -837,7 +837,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'ge-members',
      * @param {string} value
      */
     callback: (args, value)=>{
-        const inp = /**@type {HTMLInputElement}*/(document.querySelector('#stge--members'));
+        const inp = /**@type {HTMLInputElement}*/(document.querySelector('#stne--members'));
         try {
             inp.value = JSON.parse(value).join(', ');
             inp.dispatchEvent(new Event('input'));
@@ -887,7 +887,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'ge-emote',
                 isLocked: isTrueBoolean(args.lock ?? 'false'),
             };
             saveMetadataDebounced();
-            const img = imgs.find(it=>it.getAttribute('data-character') == name)?.querySelector('.stge--img');
+            const img = imgs.find(it=>it.getAttribute('data-character') == name)?.querySelector('.stne--img');
             if (img) {
                 let tc = chat_metadata.triggerCards ?? {};
                 if (!tc?.isEnabled) {
