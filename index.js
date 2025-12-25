@@ -661,11 +661,7 @@ const updateMembers = async()=>{
                 wrap.setAttribute('data-character', name);
                 const img = document.createElement('img'); {
                     img.classList.add('stne--img');
-                    let tc = chat_metadata.triggerCards ?? {};
-                    if (!tc?.isEnabled) {
-                        tc = {};
-                    }
-                    img.src = await findImage(tc?.costumes?.[name] ?? name, csettings[name]?.emote);
+                    img.src = await findImage(name, csettings[name]?.emote);
                     wrap.append(img);
                     if (geVerboseLogging) log('created wrapper for', name, 'src', img.src);
                 }
@@ -816,11 +812,7 @@ const init = ()=>{
             if (csettings.emotes[name[0]]?.isLocked) return;
             const img = imgs.find(it=>it.getAttribute('data-character') == name[0])?.querySelector('.stne--img');
             if (img) {
-                let tc = chat_metadata.triggerCards ?? {};
-                if (!tc?.isEnabled) {
-                    tc = {};
-                }
-                img.src = await findImage(tc?.costumes?.[name] ?? name.join('/'), parts.at(-1).replace(/^(.+)\.[^.]+$/, '$1'));
+                img.src = await findImage(name.join('/'), parts.at(-1).replace(/^(.+)\.[^.]+$/, '$1'));
             }
         }
     });
@@ -889,11 +881,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'ge-emote',
             saveMetadataDebounced();
             const img = imgs.find(it=>it.getAttribute('data-character') == name)?.querySelector('.stne--img');
             if (img) {
-                let tc = chat_metadata.triggerCards ?? {};
-                if (!tc?.isEnabled) {
-                    tc = {};
-                }
-                img.src = await findImage(tc?.costumes?.[name] ?? name, value);
+                img.src = await findImage(name, value);
             }
         }
         const result = csettings.emotes[name];
