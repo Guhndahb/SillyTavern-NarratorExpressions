@@ -256,3 +256,51 @@
   width: auto !important;
   object-fit: contain !important;
 }
+
+/* WIDTH mode: stack multiple wrappers vertically and center them inside the left/right area.
+   - Use flexbox on the area so wrappers participate in normal flow instead of absolute positioning.
+   - Override per-slot absolute positioning so multiple wrappers inside the same area stack rather than overlap.
+   - Keep image aspect ratio by sizing wrappers/img to area width and allowing height to be auto.
+   These rules are intentionally restricted to --placement-mode: width so CENTER mode remains unchanged. */
+.stne--root[style*="--placement-mode: width"] .stne--area {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; /* vertically center stacked items when there's extra height */
+  gap: 0.75vh;
+}
+
+/* Make wrappers participate in the flex flow and clear any absolute-positioning offsets */
+.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper,
+.stne--root[style*="--placement-mode:width"] .stne--area .stne--wrapper[style*="--order:"] {
+  position: relative !important;
+  top: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+  transform: none !important;
+  transform-origin: center center !important;
+  width: 100% !important; /* fill the available area width */
+  height: auto !important; /* height driven by image aspect ratio */
+  margin: 0 !important;
+}
+
+/* Ensure images fill wrapper width and keep their aspect ratio */
+.stne--root[style*="--placement-mode: width"] .stne--area .stne--img,
+.stne--root[style*="--placement-mode:width"] .stne--area .stne--wrapper .stne--img {
+  width: 100% !important;
+  height: auto !important;
+  object-fit: contain;
+}
+
+/* Limit max-height so when multiple stacked images exist they don't grow excessively tall
+   while preserving typical aspect ratios. This keeps them visually balanced (two stacked images
+   will typically be at most ~45vh each but will shrink naturally with their intrinsic aspect). */
+.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper {
+  max-height: 90vh; /* generous cap; individual images remain auto-height within this */
+}
+
+/* Small safety: when multiple wrappers are adjacent ensure they center horizontally */
+.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper + .stne--wrapper {
+  align-self: center;
+}
