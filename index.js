@@ -270,7 +270,7 @@ const initSettings = () => {
         isEnabled: true,
         expression: 'joy',
         transparentMenu: false,
-        extensions: ['png'],
+        extensions: ['png','webp'],
         placementMode: 'center', // new setting: 'center' (full-height centered) or 'width' (scale by available width)
         orderingStrategy: 'first-appearance', // 'count' = order by occurrence count (legacy), 'first-appearance' = order by earliest unbracketed appearance
     }, extension_settings.groupExpressions ?? {});
