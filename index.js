@@ -296,8 +296,8 @@ const initSettings = () => {
                     <label>
                         Placement mode
                         <select class="text_pole" id="stne--placementMode">
-                            <option value="center">Center (full height - default)</option>
-                            <option value="width">Width (scale to available side width)</option>
+                            <option value="center">Center</option>
+                            <option value="width">Width</option>
                         </select>
                     </label>
                 </div>
@@ -305,7 +305,7 @@ const initSettings = () => {
                     <label>
                         Ordering strategy
                         <select class="text_pole" id="stne--orderingStrategy">
-                            <option value="first-appearance">First appearance</option>
+                            <option value="first-appearance">First Appearance</option>
                             <option value="count">Count</option>
                         </select>
                     </label>
