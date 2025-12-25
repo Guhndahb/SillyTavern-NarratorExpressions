@@ -234,3 +234,25 @@
 
 /* Note: Specificity of these [style*="--placement-mode:"] selectors preserves
    existing corner-positioning logic when --placement-mode is not present. */
+
+/* FIX: Force true centering for wrappers inside left/right areas when placement-mode is "center".
+   Reason: per-slot rules (e.g. order:1 right:0) used !important and higher specificity which
+   prevented the earlier center rules from clearing right/left properties for right-side wrappers.
+   This block increases specificity by matching the wrapper's --order style substring and is placed
+   after all other rules so it reliably overrides the per-slot positioning. It also sets a neutral
+   transform-origin so translations and scaling behave consistently on both sides. */
+.stge--root[style*="--placement-mode: center"] .stge--area .stge--wrapper[style*="--order:"] ,
+.stge--root[style*="--placement-mode:center"] .stge--area .stge--wrapper[style*="--order:"] {
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  transform-origin: center center !important;
+}
+
+/* Ensure images inside the centered wrappers also use full-height when applicable */
+.stge--root[style*="--placement-mode: center"][data-visible-count="1"] .stge--area .stge--wrapper[style*="--order:"] .stge--img,
+.stge--root[style*="--placement-mode:center"][data-visible-count="2"] .stge--area .stge--wrapper[style*="--order:"] .stge--img {
+  height: 100% !important;
+  width: auto !important;
+  object-fit: contain !important;
+}
