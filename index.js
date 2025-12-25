@@ -275,17 +275,9 @@ const initSettings = () => {
     log('initSettings');
     settings = Object.assign({
         isEnabled: true,
-        numLeft: -1,
-        numRight: 2,
-        scaleSpeaker: 120,
-        offset: 25,
-        transition: 400,
         expression: 'joy',
-        scaleDropoff: 3,
         transparentMenu: false,
         extensions: ['png'],
-        position: 0,
-        positionSingle: 100,
         placementMode: 'center', // new setting: 'center' (full-height centered) or 'width' (scale by available width)
         orderingStrategy: 'first-appearance', // 'count' = order by occurrence count (legacy), 'first-appearance' = order by earliest unbracketed appearance
     }, extension_settings.groupExpressions ?? {});
@@ -313,31 +305,6 @@ const initSettings = () => {
                 </div>
                 <div class="flex-container">
                     <label>
-                        Position of expression images
-                        <div class="stge--positionContainer">
-                            Left
-                            <input type="range" class="text_pole" min="0" max="100" id="stge--positionRange" value="${settings.position}">
-                            Right
-                            <input type="number" class="text_pole" min="0" max="100" id="stge--position" value="${settings.position}">
-                            %
-                        </div>
-                    </label>
-                </div>
-                <div class="flex-container">
-                    <label>
-                        Position of expression images with only one member
-                        <div class="stge--positionContainer">
-                            Left
-                            <input type="range" class="text_pole" min="0" max="100" id="stge--positionSingleRange" value="${settings.positionSingle}">
-                            Right
-                            <input type="number" class="text_pole" min="0" max="100" id="stge--positionSingle" value="${settings.positionSingle}">
-                            %
-                        </div>
-                    </label>
-                </div>
-                <!-- Placement mode controls: grouped near other position-related inputs -->
-                <div class="flex-container">
-                    <label>
                         Placement mode
                         <select class="text_pole" id="stge--placementMode">
                             <option value="center">Center (full height - default)</option>
@@ -356,18 +323,6 @@ const initSettings = () => {
                 </div>
                 <div class="flex-container">
                     <label>
-                        Number of characters on the left <small>(-1 = unlimited)</small>
-                        <input type="number" class="text_pole" min="-1" id="stge--numLeft" value="${settings.numLeft}">
-                    </label>
-                </div>
-                <div class="flex-container">
-                    <label>
-                        Number of characters on the right <small>(-1 = unlimited)</small>
-                        <input type="number" class="text_pole" min="-1" id="stge--numRight" value="${settings.numRight}">
-                    </label>
-                </div>
-                <div class="flex-container">
-                    <label>
                         Chat path <small>(extra directory under /characters/, <strong>saved in chat</strong>)</small>
                         <input type="text" class="text_pole" id="stge--path" placeholder="Alice&Friends" value="" disabled>
                     </label>
@@ -382,30 +337,6 @@ const initSettings = () => {
                     <label>
                         Custom character list <small>(comma separated list of names, <strong>saved in chat</strong>)</small>
                         <input type="text" class="text_pole" id="stge--members" placeholder="Alice, Bob, Carol" value="" disabled>
-                    </label>
-                </div>
-                <div class="flex-container">
-                    <label>
-                        Scale of current speaker <small>(percentage; 100 = no change; <100 = shrink; >100 = grow)</small>
-                        <input type="number" class="text_pole" min="0" id="stge--scaleSpeaker" value="${settings.scaleSpeaker}">
-                    </label>
-                </div>
-                <div class="flex-container">
-                    <label>
-                        Offset of characters to the side <small>(percentage; 0 = all stacked in center; <100 = overlapping; >100 = no overlap)</small>
-                        <input type="number" class="text_pole" min="0" id="stge--offset" value="${settings.offset}">
-                    </label>
-                </div>
-                <div class="flex-container">
-                    <label>
-                        Scale dropoff <small>(percentage; 0 = no change; >0 = chars to the side get smaller; <0 = chars to the side get larger)</small>
-                        <input type="number" class="text_pole" id="stge--scaleDropoff" value="${settings.scaleDropoff}">
-                    </label>
-                </div>
-                <div class="flex-container">
-                    <label>
-                        Animation duration <small>(milliseconds)</small>
-                        <input type="number" class="text_pole" min="0" id="stge--transition" value="${settings.transition}">
                     </label>
                 </div>
                 <div class="flex-container">
@@ -437,38 +368,6 @@ const initSettings = () => {
         settings.transparentMenu = document.querySelector('#stge--transparentMenu').checked;
         saveSettingsDebounced();
     });
-    document.querySelector('#stge--positionRange').addEventListener('input', ()=>{
-        settings.position = document.querySelector('#stge--positionRange').value;
-        document.querySelector('#stge--position').value = settings.position;
-        saveSettingsDebounced();
-        if (namesCount > 1 && root) {
-            root.style.setProperty('--position', settings.position);
-        }
-    });
-    document.querySelector('#stge--position').addEventListener('input', ()=>{
-        settings.position = document.querySelector('#stge--position').value;
-        document.querySelector('#stge--positionRange').value = settings.position;
-        saveSettingsDebounced();
-        if (namesCount > 1 && root) {
-            root.style.setProperty('--position', settings.position);
-        }
-    });
-    document.querySelector('#stge--positionSingleRange').addEventListener('input', ()=>{
-        settings.positionSingle = document.querySelector('#stge--positionSingleRange').value;
-        document.querySelector('#stge--positionSingle').value = settings.positionSingle;
-        saveSettingsDebounced();
-        if (namesCount == 1 && root) {
-            root.style.setProperty('--position', settings.positionSingle);
-        }
-    });
-    document.querySelector('#stge--positionSingle').addEventListener('input', ()=>{
-        settings.positionSingle = document.querySelector('#stge--positionSingle').value;
-        document.querySelector('#stge--positionSingleRange').value = settings.positionSingle;
-        saveSettingsDebounced();
-        if (namesCount == 1 && root) {
-            root.style.setProperty('--position', settings.positionSingle);
-        }
-    });
 
     // initialize placement mode selector value
     const placementSel = document.querySelector('#stge--placementMode');
@@ -491,14 +390,6 @@ const initSettings = () => {
         saveSettingsDebounced();
     });
 
-    document.querySelector('#stge--numLeft').addEventListener('input', ()=>{
-        settings.numLeft = Number(document.querySelector('#stge--numLeft').value);
-        saveSettingsDebounced();
-    });
-    document.querySelector('#stge--numRight').addEventListener('input', ()=>{
-        settings.numRight = Number(document.querySelector('#stge--numRight').value);
-        saveSettingsDebounced();
-    });
     document.querySelector('#stge--path').addEventListener('input', ()=>{
         csettings.path = document.querySelector('#stge--path').value;
         chat_metadata.groupExpressions = csettings;
@@ -513,26 +404,6 @@ const initSettings = () => {
         csettings.members = document.querySelector('#stge--members').value.split(/\s*,\s*/).filter(it=>it.length);
         chat_metadata.groupExpressions = csettings;
         saveMetadataDebounced();
-    });
-    document.querySelector('#stge--scaleSpeaker').addEventListener('input', ()=>{
-        settings.scaleSpeaker = Number(document.querySelector('#stge--scaleSpeaker').value);
-        saveSettingsDebounced();
-        root?.style.setProperty('--scale-speaker', String(settings.scaleSpeaker));
-    });
-    document.querySelector('#stge--offset').addEventListener('input', ()=>{
-        settings.offset = Number(document.querySelector('#stge--offset').value);
-        saveSettingsDebounced();
-        root?.style.setProperty('--offset', String(settings.offset));
-    });
-    document.querySelector('#stge--scaleDropoff').addEventListener('input', ()=>{
-        settings.scaleDropoff = Number(document.querySelector('#stge--scaleDropoff').value);
-        saveSettingsDebounced();
-        root?.style.setProperty('--scale-dropoff', String(settings.scaleDropoff));
-    });
-    document.querySelector('#stge--transition').addEventListener('input', ()=>{
-        settings.transition = Number(document.querySelector('#stge--transition').value);
-        saveSettingsDebounced();
-        root?.style.setProperty('--transition', String(settings.transition));
     });
     document.querySelector('#stge--extensions').addEventListener('input', ()=>{
         settings.extensions = document.querySelector('#stge--extensions').value?.split(/,\s*/);
@@ -727,7 +598,6 @@ const messageRendered = async () => {
                     // if currently attached to root (or one of its side areas), animate exit and remove from DOM (element object remains in imgs)
                     if (wrapper.closest('.stge--root')) {
                         wrapper.classList.add('stge--exit');
-                        await delay(settings.transition + 150);
                         if (geVerboseLogging) log('removing wrapper', name);
                         wrapper.remove();
                     } else {
@@ -746,7 +616,7 @@ const messageRendered = async () => {
                 }
             }
         }
-        await delay(Math.max(settings.transition + 100, 1000));
+        await delay(1000);
     }
 };
 // eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, ()=>messageRendered());
@@ -788,14 +658,6 @@ const updateMembers = async()=>{
         } else if (context.characterId) {
             names.push(characters[context.characterId].name);
         }
-        if (namesCount != names.length) {
-            namesCount = names.length;
-            if (names.length == 1) {
-                root?.style.setProperty('--position', settings.positionSingle ?? '100');
-            } else {
-                root?.style.setProperty('--position', settings.position);
-            }
-        }
         const removed = nameList.filter(it=>names.indexOf(it) == -1);
         const added = names.filter(it=>nameList.indexOf(it) == -1);
         for (const name of removed) {
@@ -814,24 +676,13 @@ const updateMembers = async()=>{
                 }
             }
             img.classList.add('stge--exit');
-            await delay(settings.transition + 150);
             img.remove();
         }
         const purgatory = [];
-        while (settings.numLeft != -1 && left.length > settings.numLeft) {
-            purgatory.push(left.pop());
-        }
-        while (settings.numRight != -1 && right.length > settings.numRight) {
-            purgatory.push(right.pop());
-        }
         for (const name of added) {
             nameList.push(name);
             if (!current) {
                 current = name;
-            } else if ((left.length < settings.numLeft || settings.numLeft == -1) && (left.length <= right.length || right.length >= settings.numRight)) {
-                left.push(name);
-            } else if (right.length < settings.numRight || settings.numRight == -1) {
-                right.push(name);
             }
             const wrap = document.createElement('div'); {
                 imgs.push(wrap);
@@ -852,28 +703,12 @@ const updateMembers = async()=>{
         for (const name of purgatory) {
             if (!current) {
                 current = name;
-            } else if ((left.length < settings.numLeft || settings.numLeft == -1) && (left.length <= right.length || right.length >= settings.numRight)) {
-                left.push(name);
-            } else if (right.length < settings.numRight || settings.numRight == -1) {
-                right.push(name);
             } else {
                 const wrap = imgs.find(it=>it.getAttribute('data-character') == name);
                 if (wrap) {
                     wrap.classList.add('stge--exit');
-                    await delay(settings.transition + 150);
                     wrap.remove();
                 }
-            }
-        }
-        const queue = nameList.filter(it=>left.indexOf(it)==-1 && right.indexOf(it) == -1 && it != current);
-        while (queue.length > 0 && (settings.numLeft == -1 || settings.numRight == -1 || left.length < settings.numLeft || right.length < settings.numRight || !current)) {
-            const name = queue.pop();
-            if (!current) {
-                current = name;
-            } else if ((left.length < settings.numLeft || settings.numLeft == -1) && (left.length <= right.length || right.length >= settings.numRight)) {
-                left.push(name);
-            } else if (right.length < settings.numRight || settings.numRight == -1) {
-                right.push(name);
             }
         }
     } catch (ex) {
@@ -929,7 +764,7 @@ const restart = debounceAsync(async()=>{
     restarting = true;
     log('restart');
     end();
-    await delay(Math.max(550, settings.transition + 150));
+    await delay(550);
     await start();
     restarting = false;
 });
@@ -939,11 +774,6 @@ const start = async()=>{
     document.querySelector('#expression-wrapper').style.opacity = '0';
     root = document.createElement('div'); {
         root.classList.add('stge--root');
-        root.style.setProperty('--scale-speaker', settings.scaleSpeaker);
-        root.style.setProperty('--offset', settings.offset);
-        root.style.setProperty('--transition', settings.transition);
-        root.style.setProperty('--scale-dropoff', settings.scaleDropoff);
-        root.style.setProperty('--position', namesCount == 1 ? (settings.positionSingle ?? '100') : settings.position);
         root.style.setProperty('--placement-mode', settings.placementMode);
         document.body.append(root);
     }
