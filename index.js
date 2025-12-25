@@ -152,10 +152,6 @@ async function getPresentOrderedNames(lastMes, nameList) {
     const perNameDebug = [];
     for (let i = 0; i < nameList.length; i++) {
         const name = nameList[i];
-        if (csettings?.exclude?.indexOf(name.toLowerCase()) > -1) {
-            perNameDebug.push({ name, count: 0, firstIndex: null, excluded: true });
-            continue;
-        }
         const { count, firstIndex } = countOccurrencesOutsideBrackets(name, nonBracketSpans);
         perNameDebug.push({ name, count, firstIndex, excluded: false });
         if (count > 0) items.push({ name, count, firstIndex, masterIndex: i });
@@ -322,12 +318,6 @@ const initSettings = () => {
                 </div>
                 <div class="flex-container">
                     <label>
-                        Characters to exclude <small>(comma separated list of names, <strong>saved in chat</strong>)</small>
-                        <input type="text" class="text_pole" id="stne--exclude" placeholder="Alice, Bob, Carol" value="" disabled>
-                    </label>
-                </div>
-                <div class="flex-container">
-                    <label>
                         Custom character list <small>(comma separated list of names, <strong>saved in chat</strong>)</small>
                         <input type="text" class="text_pole" id="stne--members" placeholder="Alice, Bob, Carol" value="" disabled>
                     </label>
@@ -385,11 +375,6 @@ const initSettings = () => {
 
     document.querySelector('#stne--path').addEventListener('input', ()=>{
         csettings.path = document.querySelector('#stne--path').value;
-        chat_metadata.groupExpressions = csettings;
-        saveMetadataDebounced();
-    });
-    document.querySelector('#stne--exclude').addEventListener('input', ()=>{
-        csettings.exclude = document.querySelector('#stne--exclude').value.toLowerCase().split(/\s*,\s*/).filter(it=>it.length);
         chat_metadata.groupExpressions = csettings;
         saveMetadataDebounced();
     });
@@ -485,7 +470,6 @@ const chatChanged = async ()=>{
     const context = getContext();
 
     csettings = Object.assign({
-        exclude: [],
         members: [],
         emotes: {},
     }, chat_metadata.groupExpressions ?? {});
@@ -496,11 +480,6 @@ const chatChanged = async ()=>{
     if (pathEl) {
         pathEl.disabled = context.chatId == null;
         pathEl.value = csettings.path ?? '';
-    }
-    const excludeEl = document.querySelector('#stne--exclude');
-    if (excludeEl) {
-        excludeEl.disabled = context.chatId == null;
-        excludeEl.value = csettings.exclude?.join(', ') ?? '';
     }
     const membersEl = document.querySelector('#stne--members');
     if (membersEl) {
