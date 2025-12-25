@@ -41,7 +41,7 @@ let geVerboseLogging = false;
 
 /**
  * parseBracketSpans(text)
- * - Treats single-quote ('), double-quote (") and asterisk (*) as bracket tokens.
+ * - Treats double-quote (") and asterisk (*) as bracket tokens.
  * - For each opening token found, scans forward to the first matching token and returns a span [start, end) where end is closeIndex+1.
  * - If no matching closer is found, returns [openIndex, text.length).
  * - Returns array of {start, end} (end exclusive).
@@ -236,10 +236,6 @@ async function getPresentOrderedNames(lastMes, nameList) {
 let settings;
 /**@type {Object} */
 let csettings;
-/**@type {String} */
-let groupId;
-/**@type {String} */
-let chatId;
 /**@type {HTMLElement} */
 let root;
 /**@type {HTMLElement} */
@@ -250,10 +246,6 @@ let rightArea; // DOM container covering right empty side-space
 let imgs = [];
 /**@type {String[]} */
 let nameList = [];
-/**@type {String[]} */
-let left = [];
-/**@type {String[]} */
-let right = [];
 /**@type {String} */
 let current;
 /**@type {Boolean} */
@@ -265,7 +257,8 @@ let busy = false;
 let mo;
 
 const updateSettingsBackground = ()=>{
-    if (document.querySelector('.stge--settings .inline-drawer-content').getBoundingClientRect().height > 0 && settings.transparentMenu) {
+    const drawer = document.querySelector('.stge--settings .inline-drawer-content');
+    if (drawer && drawer.getBoundingClientRect().height > 0 && settings.transparentMenu) {
         document.querySelector('#rm_extensions_block').style.background = 'rgba(0 0 0 / 0.5)';
     } else {
         document.querySelector('#rm_extensions_block').style.background = '';
@@ -489,7 +482,6 @@ function updateSideSizes() {
 
 const chatChanged = async ()=>{
     log('chatChanged');
-    namesCount = -1;
     const context = getContext();
 
     csettings = Object.assign({
@@ -505,22 +497,16 @@ const chatChanged = async ()=>{
     document.querySelector('#stge--exclude').value = csettings.exclude?.join(', ') ?? '';
     document.querySelector('#stge--members').disabled = context.chatId == null;
     document.querySelector('#stge--members').value = csettings.members?.join(', ') ?? '';
-
-    if (true || context.groupId) {
-        await restart();
-    } else {
-        end();
-    }
+    await restart();
 };
 
 const groupUpdated = (...args) => {
     log('GROUP UPDATED', args);
-    namesCount = -1;
 };
 
 const messageRendered = async () => {
     log('messageRendered');
-    while (settings.isEnabled && (groupId || true)) {
+    while (settings.isEnabled) {
         if (!busy) {
             updateSettingsBackground();
             // Ensure side area sizes are recalculated before layout is applied so wrappers are appended into correct containers
@@ -566,7 +552,7 @@ const messageRendered = async () => {
                     // enter animation if not in root
                     // Determine correct target area for this slot (left/right split by visibleCount)
                     const visibleCount = slots.length;
-                    if (geVerboseLogging) log('placing wrapper', name, { slotIndex, visibleCount, slots, left, right, currentParent: wrapper.parentElement?.className });
+                    if (geVerboseLogging) log('placing wrapper', name, { slotIndex, visibleCount, slots, currentParent: wrapper.parentElement?.className });
                     let targetArea = null;
                     if (visibleCount === 1) {
                         targetArea = leftArea;
@@ -626,7 +612,7 @@ const messageRendered = async () => {
 
 const findImage = async(name, expression = null) => {
     for (const ext of settings.extensions) {
-        const url = csettings.exclude ? `/characters/${csettings.path}/${name}/${expression ?? settings.expression}.${ext}` : `/characters/${name}/${expression ?? settings.expression}.${ext}`;
+        const url = csettings.path ? `/characters/${csettings.path}/${name}/${expression ?? settings.expression}.${ext}` : `/characters/${name}/${expression ?? settings.expression}.${ext}`;
         const resp = await fetch(url, {
             method: 'HEAD',
             headers: getRequestHeaders(),
@@ -639,7 +625,7 @@ const findImage = async(name, expression = null) => {
         return await findImage(name);
     }
 };
-let namesCount = -1;
+
 const updateMembers = async()=>{
     if (busy) return;
     busy = true;
@@ -650,11 +636,6 @@ const updateMembers = async()=>{
             const members = getOrderFromText(csettings.members);
             names.push(...members);
             names.push(...csettings.members.filter(m=>!names.find(it=>it == m)));
-        } else if (groupId) {
-            const group = context.groups.find(it=>it.id == groupId);
-            const members = group.members.map(m=>characters.find(c=>c.avatar == m)).filter(it=>it);
-            names.push(...getOrder(members.map(it=>it.name)).filter(it=>csettings.exclude?.indexOf(it.toLowerCase()) == -1));
-            names.push(...members.filter(m=>!names.find(it=>it == m.name)).map(it=>it.name).filter(it=>csettings.exclude?.indexOf(it.toLowerCase()) == -1));
         } else if (context.characterId) {
             names.push(characters[context.characterId].name);
         }
@@ -664,21 +645,11 @@ const updateMembers = async()=>{
             nameList.splice(nameList.indexOf(name), 1);
             let idx = imgs.findIndex(it=>it.getAttribute('data-character') == name);
             const img = imgs.splice(idx, 1)[0];
-            idx = left.indexOf(name);
-            if (idx > -1) {
-                left.splice(idx, 1);
-            } else {
-                idx = right.indexOf(name);
-                if (idx > -1) {
-                    right.splice(idx, 1);
-                } else {
-                    current = null;
-                }
-            }
+            // reset current if it was this name
+            if (current === name) current = null;
             img.classList.add('stge--exit');
             img.remove();
         }
-        const purgatory = [];
         for (const name of added) {
             nameList.push(name);
             if (!current) {
@@ -697,17 +668,6 @@ const updateMembers = async()=>{
                     img.src = await findImage(tc?.costumes?.[name] ?? name, csettings[name]?.emote);
                     wrap.append(img);
                     if (geVerboseLogging) log('created wrapper for', name, 'src', img.src);
-                }
-            }
-        }
-        for (const name of purgatory) {
-            if (!current) {
-                current = name;
-            } else {
-                const wrap = imgs.find(it=>it.getAttribute('data-character') == name);
-                if (wrap) {
-                    wrap.classList.add('stge--exit');
-                    wrap.remove();
                 }
             }
         }
@@ -818,8 +778,6 @@ const start = async()=>{
     }
 
     const context = getContext();
-    groupId = context.groupId;
-    chatId = context.chatid;
     messageRendered();
     mo.observe(document.querySelector('#expression-wrapper'), { childList:true, subtree:true, attributes:true });
     document.querySelector('#expression-wrapper').style.opacity = '0';
@@ -827,12 +785,8 @@ const start = async()=>{
 const end = ()=>{
     log('end');
     mo.disconnect();
-    groupId = null;
-    chatId = null;
     current = null;
     nameList = [];
-    left = [];
-    right = [];
     // remove resize listener and cleanup side-area elements
     window.removeEventListener('resize', updateSideSizes);
     leftArea?.remove();
@@ -872,6 +826,7 @@ const init = ()=>{
     });
 };
 init();
+
 
 
 
