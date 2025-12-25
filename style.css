@@ -267,7 +267,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center; /* vertically center stacked items when there's extra height */
-  gap: 0.75vh;
+  gap: 1px !important; /* reduced gap per request */
   min-height: 0; /* allow flex children to shrink properly */
 }
 
@@ -310,8 +310,28 @@
   max-height: 100% !important;
   object-fit: contain;
 }
-
 /* Small safety: when multiple wrappers are adjacent ensure they center horizontally */
 .stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper + .stne--wrapper {
   align-self: center;
+}
+
+/* CENTER-mode: introduce a 1px visual gap between stacked half-height wrappers.
+   Reduce each half by 0.5px so together they leave 1px of space. Target only
+   the known half-height slots to avoid affecting full-height layouts. */
+.stne--root[style*="--placement-mode: center"][data-visible-count="3"] .stne--area .stne--wrapper[style*="--order: 1"],
+.stne--root[style*="--placement-mode:center"][data-visible-count="3"] .stne--area .stne--wrapper[style*="--order:1"],
+.stne--root[style*="--placement-mode: center"][data-visible-count="3"] .stne--area .stne--wrapper[style*="--order: 2"],
+.stne--root[style*="--placement-mode:center"][data-visible-count="3"] .stne--area .stne--wrapper[style*="--order:2"] {
+  height: calc(50vh - 0.5px) !important;
+}
+
+.stne--root[style*="--placement-mode: center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order: 0"],
+.stne--root[style*="--placement-mode:center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order:0"],
+.stne--root[style*="--placement-mode: center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order: 1"],
+.stne--root[style*="--placement-mode:center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order:1"],
+.stne--root[style*="--placement-mode: center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order: 2"],
+.stne--root[style*="--placement-mode:center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order:2"],
+.stne--root[style*="--placement-mode: center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order: 3"],
+.stne--root[style*="--placement-mode:center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order:3"] {
+  height: calc(50vh - 0.5px) !important;
 }
