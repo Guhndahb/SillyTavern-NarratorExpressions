@@ -349,8 +349,8 @@ const initSettings = () => {
                     <label>
                         Ordering strategy
                         <select class="text_pole" id="stge--orderingStrategy">
-                            <option value="first-appearance">First appearance (default)</option>
-                            <option value="count">Count (legacy)</option>
+                            <option value="first-appearance">First appearance</option>
+                            <option value="count">Count</option>
                         </select>
                     </label>
                 </div>
