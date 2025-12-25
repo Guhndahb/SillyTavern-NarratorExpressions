@@ -268,11 +268,12 @@
   align-items: center;
   justify-content: center; /* vertically center stacked items when there's extra height */
   gap: 0.75vh;
+  min-height: 0; /* allow flex children to shrink properly */
 }
 
-/* Make wrappers participate in the flex flow and clear any absolute-positioning offsets */
-.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper,
-.stne--root[style*="--placement-mode:width"] .stne--area .stne--wrapper[style*="--order:"] {
+/* Default for multiple wrappers: let them share vertical space. Use flex so they distribute available height.
+   If only one wrapper exists we'll override below to let it use full width. */
+.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper {
   position: relative !important;
   top: auto !important;
   bottom: auto !important;
@@ -280,20 +281,33 @@
   right: auto !important;
   transform: none !important;
   transform-origin: center center !important;
-  width: 100% !important; /* fill the available area width */
-  height: auto !important; /* height driven by image aspect ratio */
+  width: auto !important; /* allow width to be driven by image aspect ratio when constrained by height */
+  height: auto !important;
   margin: 0 !important;
-  flex: 0 1 auto !important; /* allow shrinking so multiple stacked wrappers fit vertically */
+  flex: 1 1 0 !important; /* share available vertical space with siblings */
   max-height: 100% !important; /* never exceed the containing area's height */
   box-sizing: border-box;
+  min-height: 0; /* ensure flex items can shrink below content size when needed */
 }
 
-/* Ensure images fill wrapper width and keep their aspect ratio; but never exceed their wrapper/area height */
-.stne--root[style*="--placement-mode: width"] .stne--area .stne--img,
-.stne--root[style*="--placement-mode:width"] .stne--area .stne--wrapper .stne--img {
+/* If a wrapper is the only child in the area, let it fill the width (single-image behavior) */
+.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper:only-child {
+  width: 100% !important;
+  flex: 0 1 auto !important;
+}
+
+/* Images: for multiple stacked wrappers, fill the wrapper height and let width adjust
+   so both images fit without cropping. For single-wrapper case, images fill width as before. */
+.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper:not(:only-child) .stne--img {
+  height: 100% !important; /* fill allocated vertical space */
+  width: auto !important; /* width adjusts to preserve aspect ratio */
+  max-width: 100% !important;
+  object-fit: contain;
+}
+.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper:only-child .stne--img {
   width: 100% !important;
   height: auto !important;
-  max-height: 100% !important; /* scale down vertically when needed to avoid cropping */
+  max-height: 100% !important;
   object-fit: contain;
 }
 
