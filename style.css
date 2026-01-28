@@ -1,15 +1,21 @@
+/* ============================================================================
+   ROOT CONTAINER
+   ============================================================================ */
 /* ROOT: Full screen overlay BEHIND the chat */
 .stne--root {
   position: fixed !important;
   inset: 0;
   width: 100vw !important;
   height: 100vh !important;
-  z-index: 10; /* Lower than #sheld (30) */
+  z-index: 10; /* Lower than #sheld (30) - stays behind main UI */
   pointer-events: none; /* Allows clicking through to the app */
   background: transparent;
   display: block;
 }
 
+/* ============================================================================
+   WRAPPERS & IMAGES - Base Styles
+   ============================================================================ */
 /* WRAPPERS: Common logic for all images */
 .stne--wrapper {
   position: absolute !important;
@@ -17,14 +23,17 @@
   width: auto !important;  /* Width scales naturally based on aspect ratio */
   margin: 0 !important;
   padding: 0 !important;
-  
+
   /* Reset dynamic animation styles */
   transform: none !important;
   scale: 1 !important;
   top: auto; bottom: auto; left: auto; right: auto;
+
+  /* Smooth transitions for movement */
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-/* IMAGE: Ensure it fills the wrapper */
+/* IMAGE: Ensure it fills the wrapper with visual polish */
 .stne--img {
   height: 100% !important;
   width: auto !important;
@@ -32,18 +41,55 @@
   display: block;
   cursor: pointer;
   pointer-events: all;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
+
+  /* Subtle shadow for depth - similar to modal */
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
 }
 
-/* Hover effect for images */
+/* Hover effect for images - subtle zoom and enhanced shadow */
 .stne--img:hover {
-  opacity: 0.85;
+  opacity: 0.95;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.4));
+  transform: scale(1.02);
 }
 
-/* --- CORNER POSITIONS --- */
+/* Active speaker indicator - enhanced glow effect */
+.stne--wrapper.stne--last .stne--img {
+  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4))
+          drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+  animation: subtle-pulse 2s ease-in-out infinite;
+}
 
+@keyframes subtle-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4))
+            drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.6))
+            drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+  }
+}
+
+/* Exit animation */
+.stne--wrapper.stne--exit {
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Hidden state */
+.stne--wrapper.stne--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ============================================================================
+   CORNER POSITIONS - Slot Ordering
+   ============================================================================ */
 /* Image 1: Top Left */
-.stne--wrapper[style*="--order: 0"], 
+.stne--wrapper[style*="--order: 0"],
 .stne--wrapper[style*="--order:0"] {
   top: 0;
   left: 0;
@@ -51,7 +97,7 @@
 }
 
 /* Image 2: Bottom Left */
-.stne--wrapper[style*="--order: 1"], 
+.stne--wrapper[style*="--order: 1"],
 .stne--wrapper[style*="--order:1"] {
   bottom: 0;
   left: 0;
@@ -59,7 +105,7 @@
 }
 
 /* Image 3: Top Right */
-.stne--wrapper[style*="--order: 2"], 
+.stne--wrapper[style*="--order: 2"],
 .stne--wrapper[style*="--order:2"] {
   top: 0;
   right: 0;
@@ -67,7 +113,7 @@
 }
 
 /* Image 4: Bottom Right */
-.stne--wrapper[style*="--order: 3"], 
+.stne--wrapper[style*="--order: 3"],
 .stne--wrapper[style*="--order:3"] {
   bottom: 0;
   right: 0;
@@ -80,8 +126,9 @@
   display: none;
 }
 
-/* Layout adjustments for different visible counts */
-
+/* ============================================================================
+   VISIBLE COUNT LAYOUTS - Adaptive positioning based on character count
+   ============================================================================ */
 /* 1 image: use full height on the left for slot 0 */
 .stne--root[data-visible-count="1"] .stne--wrapper[style*="--order: 0"],
 .stne--root[data-visible-count="1"] .stne--wrapper[style*="--order:0"] {
@@ -113,9 +160,7 @@
   transform-origin: center right;
 }
 
-/* 3 images: slot 0 full-left; slots 1 and 2 are half-height on the right (top and bottom)
-   Note: this intentionally remaps the visual placement for slots 1/2 when 3 images are visible
-*/
+/* 3 images: slot 0 full-left; slots 1 and 2 are half-height on the right (top and bottom) */
 .stne--root[data-visible-count="3"] .stne--wrapper[style*="--order: 0"],
 .stne--root[data-visible-count="3"] .stne--wrapper[style*="--order:0"] {
   height: 100vh !important;
@@ -146,11 +191,9 @@
   transform-origin: bottom right;
 }
 
-/* --- NEW: Area containers for left/right placements --- */
-/* .stne--area: general container (absolute) that spans the root vertically.
-   .stne--left-area / .stne--right-area: anchored to left/right with widths
-   controlled by CSS variables (--left-space / --right-space) set inline on .stne--root.
-   These areas are pointer-events:none so the overlay remains click-through. */
+/* ============================================================================
+   AREA CONTAINERS - Left/Right side panels
+   ============================================================================ */
 .stne--area {
   position: absolute;
   top: 0;
@@ -170,19 +213,12 @@
   width: var(--right-space, 0px);
 }
 
-/* --- Placement modes: center vs width ---
-   These rules only apply when the inline style on .stne--root contains
-   --placement-mode: center (or width). Using attribute selectors ensures
-   default behavior remains unchanged when --placement-mode is not set. */
-
-/* CENTER mode (restricted):
-   - For visible counts 1 and 2 we want full-height wrappers centered inside each side-area.
-   - For 3/4 images we must NOT override the per-count height rules (50vh) used for stacking.
-   The selectors below apply the full-height centering only when the root's data-visible-count is 1 or 2. */
-.stne--root[style*="--placement-mode: center"][data-visible-count="1"] .stne--area .stne--wrapper,
-.stne--root[style*="--placement-mode:center"][data-visible-count="1"] .stne--area .stne--wrapper,
-.stne--root[style*="--placement-mode: center"][data-visible-count="2"] .stne--area .stne--wrapper,
-.stne--root[style*="--placement-mode:center"][data-visible-count="2"] .stne--area .stne--wrapper {
+/* ============================================================================
+   PLACEMENT MODE: CENTER - Images centered in side areas
+   ============================================================================ */
+/* CENTER mode: For visible counts 1 and 2 we want full-height wrappers centered inside each side-area */
+.stne--root[data-placement-mode="center"][data-visible-count="1"] .stne--area .stne--wrapper,
+.stne--root[data-placement-mode="center"][data-visible-count="2"] .stne--area .stne--wrapper {
   height: 100vh !important;
   top: 0 !important;
   bottom: 0 !important;
@@ -191,97 +227,71 @@
   transform: translateX(-50%) !important; /* horizontally center */
   width: auto !important; /* keep width determined by aspect ratio */
 }
-.stne--root[style*="--placement-mode: center"][data-visible-count="1"] .stne--area .stne--img,
-.stne--root[style*="--placement-mode:center"][data-visible-count="1"] .stne--area .stne--img,
-.stne--root[style*="--placement-mode: center"][data-visible-count="2"] .stne--area .stne--img,
-.stne--root[style*="--placement-mode:center"][data-visible-count="2"] .stne--area .stne--img {
+
+.stne--root[data-placement-mode="center"][data-visible-count="1"] .stne--area .stne--img,
+.stne--root[data-placement-mode="center"][data-visible-count="2"] .stne--area .stne--img {
   height: 100% !important;
   width: auto !important;
-  object-fit: contain; /* ensure image fits within full-height wrapper */
-}
-
-/* CENTER: horizontally center wrappers only for visible counts 1 and 2.
-   This preserves the per-count stacking rules used for 3/4 images. */
-.stne--root[style*="--placement-mode: center"][data-visible-count="1"] .stne--area .stne--wrapper,
-.stne--root[style*="--placement-mode:center"][data-visible-count="1"] .stne--area .stne--wrapper,
-.stne--root[style*="--placement-mode: center"][data-visible-count="2"] .stne--area .stne--wrapper,
-.stne--root[style*="--placement-mode:center"][data-visible-count="2"] .stne--area .stne--wrapper {
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-}
-
-/* CENTER: also horizontally center wrappers for visible counts 3 and 4 without changing heights
-   so stacked halves remain 50vh but are centered horizontally in their side-area. */
-.stne--root[style*="--placement-mode: center"][data-visible-count="3"] .stne--area .stne--wrapper,
-.stne--root[style*="--placement-mode:center"][data-visible-count="3"] .stne--area .stne--wrapper,
-.stne--root[style*="--placement-mode: center"][data-visible-count="4"] .stne--area .stne--wrapper,
-.stne--root[style*="--placement-mode:center"][data-visible-count="4"] .stne--area .stne--wrapper {
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-}
-
-/* WIDTH mode:
-   - Wrappers and images size to the available area width, maintaining aspect ratio
-   - Enforce width:100% and height:auto on both wrapper and img */
-.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper,
-.stne--root[style*="--placement-mode:width"] .stne--area .stne--wrapper {
-  width: 100% !important; /* fill the area width */
-  height: auto !important; /* height driven by image aspect ratio */
-  left: 0 !important;
-  right: 0 !important;
-  top: auto; /* allow normal top/bottom rules to apply */
-  bottom: auto;
-  transform: none !important;
-}
-.stne--root[style*="--placement-mode: width"] .stne--area .stne--img,
-.stne--root[style*="--placement-mode:width"] .stne--area .stne--img {
-  width: 100% !important;
-  height: auto !important;
   object-fit: contain;
 }
 
-/* Note: Specificity of these [style*="--placement-mode:"] selectors preserves
-   existing corner-positioning logic when --placement-mode is not present. */
+/* CENTER: horizontally center wrappers for visible counts 3 and 4 without changing heights */
+.stne--root[data-placement-mode="center"][data-visible-count="3"] .stne--area .stne--wrapper,
+.stne--root[data-placement-mode="center"][data-visible-count="4"] .stne--area .stne--wrapper {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
 
-/* FIX: Force true centering for wrappers inside left/right areas when placement-mode is "center".
-   Reason: per-slot rules (e.g. order:1 right:0) used !important and higher specificity which
-   prevented the earlier center rules from clearing right/left properties for right-side wrappers.
-   This block increases specificity by matching the wrapper's --order style substring and is placed
-   after all other rules so it reliably overrides the per-slot positioning. It also sets a neutral
-   transform-origin so translations and scaling behave consistently on both sides. */
-.stne--root[style*="--placement-mode: center"] .stne--area .stne--wrapper[style*="--order:"] ,
-.stne--root[style*="--placement-mode:center"] .stne--area .stne--wrapper[style*="--order:"] {
+/* Force true centering for wrappers with --order attribute (higher specificity override) */
+.stne--root[data-placement-mode="center"] .stne--area .stne--wrapper[style*="--order:"] {
   left: 50% !important;
   right: auto !important;
   transform: translateX(-50%) !important;
   transform-origin: center center !important;
 }
 
-/* Ensure images inside the centered wrappers also use full-height when applicable */
-.stne--root[style*="--placement-mode: center"][data-visible-count="1"] .stne--area .stne--wrapper[style*="--order:"] .stne--img,
-.stne--root[style*="--placement-mode:center"][data-visible-count="2"] .stne--area .stne--wrapper[style*="--order:"] .stne--img {
+/* Ensure images inside centered wrappers use full-height when applicable */
+.stne--root[data-placement-mode="center"][data-visible-count="1"] .stne--area .stne--wrapper[style*="--order:"] .stne--img,
+.stne--root[data-placement-mode="center"][data-visible-count="2"] .stne--area .stne--wrapper[style*="--order:"] .stne--img {
   height: 100% !important;
   width: auto !important;
   object-fit: contain !important;
 }
 
-/* WIDTH mode: stack multiple wrappers vertically and center them inside the left/right area.
-   - Use flexbox on the area so wrappers participate in normal flow instead of absolute positioning.
-   - Override per-slot absolute positioning so multiple wrappers inside the same area stack rather than overlap.
-   - Keep image aspect ratio by sizing wrappers/img to area width and allowing height to be auto.
-   These rules are intentionally restricted to --placement-mode: width so CENTER mode remains unchanged. */
-.stne--root[style*="--placement-mode: width"] .stne--area {
+/* CENTER-mode: 1px visual gap between stacked half-height wrappers */
+.stne--root[data-placement-mode="center"][data-visible-count="3"] .stne--area .stne--wrapper[style*="--order: 1"],
+.stne--root[data-placement-mode="center"][data-visible-count="3"] .stne--area .stne--wrapper[style*="--order:1"],
+.stne--root[data-placement-mode="center"][data-visible-count="3"] .stne--area .stne--wrapper[style*="--order: 2"],
+.stne--root[data-placement-mode="center"][data-visible-count="3"] .stne--area .stne--wrapper[style*="--order:2"] {
+  height: calc(50vh - 0.5px) !important;
+}
+
+.stne--root[data-placement-mode="center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order: 0"],
+.stne--root[data-placement-mode="center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order:0"],
+.stne--root[data-placement-mode="center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order: 1"],
+.stne--root[data-placement-mode="center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order:1"],
+.stne--root[data-placement-mode="center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order: 2"],
+.stne--root[data-placement-mode="center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order:2"],
+.stne--root[data-placement-mode="center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order: 3"],
+.stne--root[data-placement-mode="center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order:3"] {
+  height: calc(50vh - 0.5px) !important;
+}
+
+/* ============================================================================
+   PLACEMENT MODE: WIDTH - Images fill available width
+   ============================================================================ */
+/* WIDTH mode: Use flexbox to stack multiple wrappers vertically */
+.stne--root[data-placement-mode="width"] .stne--area {
   display: flex !important;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* vertically center stacked items when there's extra height */
-  gap: 1px !important; /* reduced gap per request */
-  min-height: 0; /* allow flex children to shrink properly */
+  justify-content: center;
+  gap: 1px !important;
+  min-height: 0;
 }
 
-/* Default for multiple wrappers: let them share vertical space. Use flex so they distribute available height.
-   If only one wrapper exists we'll override below to let it use full width. */
-.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper {
+/* Wrappers in WIDTH mode */
+.stne--root[data-placement-mode="width"] .stne--area .stne--wrapper {
   position: relative !important;
   top: auto !important;
   bottom: auto !important;
@@ -289,75 +299,59 @@
   right: auto !important;
   transform: none !important;
   transform-origin: center center !important;
-  width: auto !important; /* allow width to be driven by image aspect ratio when constrained by height */
+  width: auto !important;
   height: auto !important;
   margin: 0 !important;
-  flex: 1 1 0 !important; /* share available vertical space with siblings */
-  max-height: 100% !important; /* never exceed the containing area's height */
+  flex: 1 1 0 !important;
+  max-height: 100% !important;
   box-sizing: border-box;
-  min-height: 0; /* ensure flex items can shrink below content size when needed */
+  min-height: 0;
 }
 
-/* If a wrapper is the only child in the area, let it fill the width (single-image behavior) */
-.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper:only-child {
+/* Single wrapper in WIDTH mode fills width */
+.stne--root[data-placement-mode="width"] .stne--area .stne--wrapper:only-child {
   width: 100% !important;
   flex: 0 1 auto !important;
 }
 
-/* Images: for multiple stacked wrappers, fill the wrapper height and let width adjust
-   so both images fit without cropping. For single-wrapper case, images fill width as before. */
-.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper:not(:only-child) .stne--img {
-  height: 100% !important; /* fill allocated vertical space */
-  width: auto !important; /* width adjusts to preserve aspect ratio */
+/* Images in WIDTH mode with multiple wrappers */
+.stne--root[data-placement-mode="width"] .stne--area .stne--wrapper:not(:only-child) .stne--img {
+  height: 100% !important;
+  width: auto !important;
   max-width: 100% !important;
   object-fit: contain;
 }
-.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper:only-child .stne--img {
+
+/* Images in WIDTH mode with single wrapper */
+.stne--root[data-placement-mode="width"] .stne--area .stne--wrapper:only-child .stne--img {
   width: 100% !important;
   height: auto !important;
   max-height: 100% !important;
   object-fit: contain;
 }
-/* Small safety: when multiple wrappers are adjacent ensure they center horizontally */
-.stne--root[style*="--placement-mode: width"] .stne--area .stne--wrapper + .stne--wrapper {
+
+/* Center multiple wrappers horizontally */
+.stne--root[data-placement-mode="width"] .stne--area .stne--wrapper + .stne--wrapper {
   align-self: center;
 }
 
-/* CENTER-mode: introduce a 1px visual gap between stacked half-height wrappers.
-   Reduce each half by 0.5px so together they leave 1px of space. Target only
-   the known half-height slots to avoid affecting full-height layouts. */
-.stne--root[style*="--placement-mode: center"][data-visible-count="3"] .stne--area .stne--wrapper[style*="--order: 1"],
-.stne--root[style*="--placement-mode:center"][data-visible-count="3"] .stne--area .stne--wrapper[style*="--order:1"],
-.stne--root[style*="--placement-mode: center"][data-visible-count="3"] .stne--area .stne--wrapper[style*="--order: 2"],
-.stne--root[style*="--placement-mode:center"][data-visible-count="3"] .stne--area .stne--wrapper[style*="--order:2"] {
-  height: calc(50vh - 0.5px) !important;
-}
-
-.stne--root[style*="--placement-mode: center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order: 0"],
-.stne--root[style*="--placement-mode:center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order:0"],
-.stne--root[style*="--placement-mode: center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order: 1"],
-.stne--root[style*="--placement-mode:center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order:1"],
-.stne--root[style*="--placement-mode: center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order: 2"],
-.stne--root[style*="--placement-mode:center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order:2"],
-.stne--root[style*="--placement-mode: center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order: 3"],
-.stne--root[style*="--placement-mode:center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order:3"] {
-  height: calc(50vh - 0.5px) !important;
-}
-
-/* --- MODAL OVERLAY FOR ZOOMED IMAGE --- */
+/* ============================================================================
+   MODAL OVERLAY - Zoomed image view
+   ============================================================================ */
 .stne--modal-overlay {
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 1000;
-  background: rgba(0, 0, 0, 0.9);
+  z-index: 1000; /* High z-index to appear above everything */
+  background: rgba(0, 0, 0, 0.95); /* Slightly darker background */
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: all;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(4px); /* Subtle blur effect on background */
 }
 
 .stne--modal-img {
@@ -365,12 +359,13 @@
   max-height: 95vh;
   object-fit: contain;
   cursor: pointer;
-  animation: stne-zoom-in 0.2s ease;
+  animation: stne-zoom-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 10px 40px rgba(0, 0, 0, 0.5));
 }
 
 @keyframes stne-zoom-in {
   from {
-    transform: scale(0.9);
+    transform: scale(0.85);
     opacity: 0;
   }
   to {

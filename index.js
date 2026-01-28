@@ -33,11 +33,21 @@ export function debounceAsync(func, timeout = 300) {
     };
 }
 
-// regex cache for makeWordRegex
+// ============================================================================
+// CONSTANTS & CONFIGURATION
+// ============================================================================
+
+// regex cache for makeWordRegex with size limit to prevent unbounded growth
 const regexCache = {};
+const MAX_REGEX_CACHE_SIZE = 100;
+
 // logging control: only emit verbose debug logs once per changed message
 let lastLoggedMessageText = null;
-let geVerboseLogging = false;
+let enableVerboseLogging = false;
+
+// ============================================================================
+// HELPER FUNCTIONS - Text Parsing
+// ============================================================================
 
 /**
  * parseBracketSpans(text)
@@ -87,10 +97,19 @@ function getNonBracketSpans(text) {
 /**
  * makeWordRegex(name)
  * - Escapes name via escapeRegex and returns a cached RegExp using pattern (?:^|\\W)(escaped)(?:$|\\W) with 'gi' flags.
+ * - Implements cache size limit to prevent unbounded memory growth
  */
 function makeWordRegex(name) {
     const key = String(name).toLowerCase();
     if (regexCache[key]) return regexCache[key];
+
+    // Prevent unbounded cache growth
+    if (Object.keys(regexCache).length >= MAX_REGEX_CACHE_SIZE) {
+        // Clear oldest half of cache entries
+        const keys = Object.keys(regexCache);
+        keys.slice(0, Math.floor(keys.length / 2)).forEach(k => delete regexCache[k]);
+    }
+
     const escaped = escapeRegex(name);
     const pattern = `(?:^|\\W)(${escaped})(?:$|\\W)`;
     const rx = new RegExp(pattern, 'gi');
@@ -114,7 +133,7 @@ function countOccurrencesOutsideBrackets(name, nonBracketSpans) {
         if (!hay) continue;
         // use matchAll to collect matches reliably
         const matches = Array.from(hay.matchAll(local));
-        if (matches.length && geVerboseLogging) {
+        if (matches.length && enableVerboseLogging) {
             log('matches for', name, 'span', span.start, matches.map(m=>({ match: m[0], index: m.index })));
         }
         for (const m of matches) {
@@ -141,12 +160,12 @@ async function getPresentOrderedNames(lastMes, nameList) {
     const text = lastMes?.mes ?? lastMes?.message ?? lastMes?.text ?? '';
     // Determine USER name: prefer explicit custom members order (edit box) if available, else fall back to nameList[0]
     const USER_NAME = (csettings?.members && csettings.members.length) ? csettings.members[0] : nameList?.[0];
-    if (geVerboseLogging) log('userNameResolution', { csettingsMembers: csettings?.members, nameListHead: nameList?.[0], USER_NAME });
+    if (enableVerboseLogging) log('userNameResolution', { csettingsMembers: csettings?.members, nameListHead: nameList?.[0], USER_NAME });
     if ((!text || text.length === 0) && lastMes?.is_user) {
         return USER_NAME ? [USER_NAME] : [];
     }
     const nonBracketSpans = getNonBracketSpans(text).map(s => ({ ...s, text: text.slice(s.start, s.end) }));
-    if (geVerboseLogging) log('nonBracketSpans', nonBracketSpans);
+    if (enableVerboseLogging) log('nonBracketSpans', nonBracketSpans);
     const items = [];
     // collect counts per name for debug
     const perNameDebug = [];
@@ -157,7 +176,7 @@ async function getPresentOrderedNames(lastMes, nameList) {
         if (count > 0) items.push({ name, count, firstIndex, masterIndex: i });
     }
     // Debug log: per-name counts before sorting
-    if (geVerboseLogging) log('perNameCounts', perNameDebug);
+    if (enableVerboseLogging) log('perNameCounts', perNameDebug);
     // If message is user, ensure user exists and mark forced
     if (lastMes?.is_user) {
         if (USER_NAME) {
@@ -184,11 +203,11 @@ async function getPresentOrderedNames(lastMes, nameList) {
         }
     });
     // Debug log: ordered items after sorting
-    if (geVerboseLogging) log('orderedItems', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
+    if (enableVerboseLogging) log('orderedItems', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     // Debug: snapshot before demotion/forced adjustments
-    if (geVerboseLogging) log('beforeDemotion', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
+    if (enableVerboseLogging) log('beforeDemotion', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     // Debug: demotion check state
-    if (geVerboseLogging) {
+    if (enableVerboseLogging) {
         const userIdxDbg = items.findIndex(it => it.name === USER_NAME);
         log('demotionCheck', { USER_NAME, userIdx: userIdxDbg, itemsNames: items.map(it=>it.name), lastMesIsUser: !!lastMes?.is_user });
     }
@@ -211,11 +230,15 @@ async function getPresentOrderedNames(lastMes, nameList) {
         }
     }
     // Debug: snapshot after demotion/forced adjustments
-    if (geVerboseLogging) log('afterDemotion', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
+    if (enableVerboseLogging) log('afterDemotion', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     // Final priorities log
-    if (geVerboseLogging) log('finalPriorities', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
+    if (enableVerboseLogging) log('finalPriorities', items.map(it=>({ name: it.name, count: it.count, firstIndex: it.firstIndex, forced: !!it.forced })));
     return items.map(it => it.name);
 }
+
+// ============================================================================
+// STATE MANAGEMENT
+// ============================================================================
 
 // Quick sanity test (will log examples on load)
 (async ()=>{
@@ -253,6 +276,10 @@ let modalOverlay; // Modal overlay for zoomed image view
 
 /**@type {MutationObserver} */
 let mo;
+
+// ============================================================================
+// UI COMPONENTS - Modal & Settings
+// ============================================================================
 
 /**
  * showZoomedImage(imgElement)
@@ -431,11 +458,11 @@ const initSettings = () => {
     const placementSel = document.querySelector('#stne--placementMode');
     if (placementSel) placementSel.value = settings.placementMode;
     placementSel?.addEventListener('change', ()=>{
-        // save setting, debounce, and immediately update UI via CSS variables without restarting
+        // save setting, debounce, and immediately update UI via data attribute without restarting
         settings.placementMode = document.querySelector('#stne--placementMode').value;
         saveSettingsDebounced();
         if (root) {
-            root.style.setProperty('--placement-mode', settings.placementMode);
+            root.dataset.placementMode = settings.placementMode;
             // update side sizes/areas immediately so image wrappers move to correct containers
             updateSideSizes();
         }
@@ -533,12 +560,17 @@ function updateSideSizes() {
     // expose pixel values as CSS variables for use by CSS rules
     root.style.setProperty('--left-space', `${leftSpace}px`);
     root.style.setProperty('--right-space', `${rightSpace}px`);
-    root.style.setProperty('--placement-mode', settings.placementMode);
+    // use data attribute for placement mode (more reliable than inline style for CSS selectors)
+    root.dataset.placementMode = settings.placementMode;
     // update DOM area widths so appended wrappers are inside the correct side area
     if (leftArea) leftArea.style.width = `${leftSpace}px`;
     if (rightArea) rightArea.style.width = `${rightSpace}px`;
-    if (geVerboseLogging) log('updateSideSizes', { leftSpace, rightSpace });
+    if (enableVerboseLogging) log('updateSideSizes', { leftSpace, rightSpace });
 }
+
+// ============================================================================
+// EVENT HANDLERS
+// ============================================================================
 
 const chatChanged = async ()=>{
     log('chatChanged');
@@ -581,21 +613,21 @@ const messageRendered = async () => {
             // Decide whether to emit verbose debug logs for this message (only once per changed message)
             const messageTextForLog = lastMes?.mes ?? lastMes?.message ?? lastMes?.text ?? '';
             if (messageTextForLog !== lastLoggedMessageText) {
-                geVerboseLogging = true;
+                enableVerboseLogging = true;
                 lastLoggedMessageText = messageTextForLog;
             } else {
-                geVerboseLogging = false;
+                enableVerboseLogging = false;
             }
 
             // New presence & ordering logic (narrator/DM mode): compute ordered names based on unbracketed occurrences
             const orderedNames = await getPresentOrderedNames(lastMes, nameList);
-            if (geVerboseLogging) log('orderedNames', orderedNames);
+            if (enableVerboseLogging) log('orderedNames', orderedNames);
             const slots = orderedNames.slice(0, 4);
             // expose how many images are visible so CSS can adapt layouts for 1/2/3 images
             if (root) root.setAttribute('data-visible-count', String(Math.max(0, Math.min(4, slots.length))));
 
             // debug: print slots and wrapper state when verbose logging is enabled
-            if (geVerboseLogging) {
+            if (enableVerboseLogging) {
                 try {
                     log('messageRendered slots:', slots);
                     log('wrappers:', imgs.map(w=>({ name: w.getAttribute('data-character'), attached: !!w.closest('.stne--root'), parent: w.parentElement?.className })));
@@ -616,7 +648,7 @@ const messageRendered = async () => {
                     // enter animation if not in root
                     // Determine correct target area for this slot (left/right split by visibleCount)
                     const visibleCount = slots.length;
-                    if (geVerboseLogging) log('placing wrapper', name, { slotIndex, visibleCount, slots, currentParent: wrapper.parentElement?.className });
+                    if (enableVerboseLogging) log('placing wrapper', name, { slotIndex, visibleCount, slots, currentParent: wrapper.parentElement?.className });
                     let targetArea = null;
                     if (visibleCount === 1) {
                         targetArea = leftArea;
@@ -627,17 +659,17 @@ const messageRendered = async () => {
                     } else {
                         targetArea = (slotIndex <= 1) ? leftArea : rightArea;
                     }
-                    if (geVerboseLogging) log('chosen targetArea class:', targetArea?.className);
+                    if (enableVerboseLogging) log('chosen targetArea class:', targetArea?.className);
                     // Only move DOM node if it's not already in the correct area
                     if (wrapper.parentElement !== targetArea) {
                         wrapper.classList.add('stne--exit');
-                        if (geVerboseLogging) {
+                        if (enableVerboseLogging) {
                             try { log('pre-move', { name, from: wrapper.parentElement?.className, to: targetArea?.className }); } catch(e) { log('pre-move log err', e); }
                         }
                         targetArea?.append(wrapper);
                         await delay(50);
                         wrapper.classList.remove('stne--exit');
-                        if (geVerboseLogging) {
+                        if (enableVerboseLogging) {
                             try { log('moved', { name, parent: wrapper.parentElement?.className, wrapperRect: wrapper.getBoundingClientRect() }); } catch(e) { log('post-move log err', e); }
                         }
                     }
@@ -648,7 +680,7 @@ const messageRendered = async () => {
                     // if currently attached to root (or one of its side areas), animate exit and remove from DOM (element object remains in imgs)
                     if (wrapper.closest('.stne--root')) {
                         wrapper.classList.add('stne--exit');
-                        if (geVerboseLogging) log('removing wrapper', name);
+                        if (enableVerboseLogging) log('removing wrapper', name);
                         wrapper.remove();
                     } else {
                         // keep in memory but mark hidden
@@ -674,9 +706,19 @@ const messageRendered = async () => {
 
 
 
-const findImage = async(name, expression = null) => {
+/**
+ * findImage(name, expression, triedDefault)
+ * - Searches for character expression images across configured extensions
+ * - Falls back to default expression if specified expression is not found
+ * - Returns URL if found, undefined otherwise
+ */
+const findImage = async(name, expression = null, triedDefault = false) => {
+    const targetExpression = expression ?? settings.expression;
+
     for (const ext of settings.extensions) {
-        const url = csettings.path ? `/characters/${csettings.path}/${name}/${expression ?? settings.expression}.${ext}` : `/characters/${name}/${expression ?? settings.expression}.${ext}`;
+        const url = csettings.path
+            ? `/characters/${csettings.path}/${name}/${targetExpression}.${ext}`
+            : `/characters/${name}/${targetExpression}.${ext}`;
         const resp = await fetch(url, {
             method: 'HEAD',
             headers: getRequestHeaders(),
@@ -685,8 +727,10 @@ const findImage = async(name, expression = null) => {
             return url;
         }
     }
-    if (expression && expression != settings.expression) {
-        return await findImage(name);
+
+    // Fallback to default expression (but only once to prevent infinite recursion)
+    if (expression && expression !== settings.expression && !triedDefault) {
+        return await findImage(name, settings.expression, true);
     }
 };
 
@@ -734,7 +778,7 @@ const updateMembers = async()=>{
                         showZoomedImage(img);
                     });
                     wrap.append(img);
-                    if (geVerboseLogging) log('created wrapper for', name, 'src', img.src);
+                    if (enableVerboseLogging) log('created wrapper for', name, 'src', img.src);
                 }
             }
         }
@@ -749,6 +793,10 @@ eventSource.on(event_types.GROUP_UPDATED, (...args)=>groupUpdated(...args));
 
 
 
+
+// ============================================================================
+// CORE LOGIC - Member Ordering & Updates
+// ============================================================================
 
 const getOrder = (members)=>{
     const o = [];
@@ -785,6 +833,10 @@ const getOrderFromText = (members)=>{
     }
     return o;
 };
+// ============================================================================
+// LIFECYCLE MANAGEMENT - Start/Stop/Restart
+// ============================================================================
+
 let restarting = false;
 const restart = debounceAsync(async()=>{
     if (restarting) return;
@@ -801,7 +853,7 @@ const start = async()=>{
     document.querySelector('#expression-wrapper').style.opacity = '0';
     root = document.createElement('div'); {
         root.classList.add('stne--root');
-        root.style.setProperty('--placement-mode', settings.placementMode);
+        root.dataset.placementMode = settings.placementMode;
         document.body.append(root);
     }
     // Create left/right side-area containers that cover the empty side spaces of the viewport.
@@ -833,7 +885,7 @@ const start = async()=>{
     updateSideSizes();
 
     // Diagnostic logging: report area classnames and computed widths after initial measurement
-    if (geVerboseLogging) {
+    if (enableVerboseLogging) {
         try {
             log('start areas:', {
                 leftClass: leftArea.className,
@@ -880,15 +932,16 @@ const init = ()=>{
     mo = new MutationObserver(async(muts)=>{
         if (busy) return;
         const lastCharMes = chat.toReversed().find(it=>!it.is_user && !it.is_system && nameList.find(o=>it.name == o));
-        const img = imgs.find(it=>it.getAttribute('data-character') == lastCharMes?.name);
-        if (img && document.querySelector('#expression-image').src) {
+        const wrapper = imgs.find(it=>it.getAttribute('data-character') == lastCharMes?.name);
+        if (wrapper && document.querySelector('#expression-image')?.src) {
             const src = document.querySelector('#expression-image').src;
             const parts = src.split('/');
-            const name = parts.slice(parts.indexOf('characters') + 1, -1).map(it=>decodeURIComponent(it));
-            if (csettings.emotes[name[0]]?.isLocked) return;
-            const img = imgs.find(it=>it.getAttribute('data-character') == name[0])?.querySelector('.stne--img');
-            if (img) {
-                img.src = await findImage(name.join('/'), parts.at(-1).replace(/^(.+)\.[^.]+$/, '$1'));
+            const nameParts = parts.slice(parts.indexOf('characters') + 1, -1).map(it=>decodeURIComponent(it));
+            // Check if emote is locked before updating
+            if (csettings.emotes?.[nameParts[0]]?.isLocked) return;
+            const imgElement = imgs.find(it=>it.getAttribute('data-character') == nameParts[0])?.querySelector('.stne--img');
+            if (imgElement) {
+                imgElement.src = await findImage(nameParts.join('/'), parts.at(-1).replace(/^(.+)\.[^.]+$/, '$1'));
             }
         }
     });
@@ -897,6 +950,10 @@ init();
 
 
 
+
+// ============================================================================
+// SLASH COMMANDS
+// ============================================================================
 
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'ge-members',
     /**
