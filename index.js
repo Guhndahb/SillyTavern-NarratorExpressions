@@ -246,11 +246,86 @@ let nameList = [];
 let current;
 /**@type {Boolean} */
 let busy = false;
+/**@type {HTMLElement} */
+let modalOverlay; // Modal overlay for zoomed image view
 
 
 
 /**@type {MutationObserver} */
 let mo;
+
+/**
+ * showZoomedImage(imgElement)
+ * - Creates a modal overlay with a zoomed version of the clicked image
+ * - Image is scaled to fill the viewport while maintaining aspect ratio
+ * - Clicking the modal dismisses it
+ */
+const showZoomedImage = (imgElement) => {
+    if (!imgElement || !root) return;
+
+    // Create modal overlay if it doesn't exist
+    if (!modalOverlay) {
+        modalOverlay = document.createElement('div');
+        modalOverlay.classList.add('stne--modal-overlay');
+        modalOverlay.style.cssText = `
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: all;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        `;
+
+        // Create zoomed image container
+        const zoomedImg = document.createElement('img');
+        zoomedImg.classList.add('stne--modal-img');
+        zoomedImg.style.cssText = `
+            max-width: 95vw;
+            max-height: 95vh;
+            object-fit: contain;
+            cursor: pointer;
+        `;
+
+        modalOverlay.append(zoomedImg);
+        document.body.append(modalOverlay);
+
+        // Click handler to dismiss modal
+        modalOverlay.addEventListener('click', hideZoomedImage);
+    }
+
+    // Set the image source and show modal
+    const zoomedImg = modalOverlay.querySelector('.stne--modal-img');
+    if (zoomedImg) {
+        zoomedImg.src = imgElement.src;
+    }
+
+    // Trigger reflow and fade in
+    modalOverlay.style.display = 'flex';
+    requestAnimationFrame(() => {
+        modalOverlay.style.opacity = '1';
+    });
+};
+
+/**
+ * hideZoomedImage()
+ * - Dismisses the zoomed image modal with a fade-out animation
+ */
+const hideZoomedImage = () => {
+    if (!modalOverlay) return;
+
+    modalOverlay.style.opacity = '0';
+    setTimeout(() => {
+        if (modalOverlay) {
+            modalOverlay.style.display = 'none';
+        }
+    }, 200);
+};
 
 const updateSettingsBackground = ()=>{
     const drawer = document.querySelector('.stne--settings .inline-drawer-content');
@@ -651,6 +726,13 @@ const updateMembers = async()=>{
                 const img = document.createElement('img'); {
                     img.classList.add('stne--img');
                     img.src = await findImage(name, csettings[name]?.emote);
+                    img.style.cursor = 'pointer';
+                    img.style.pointerEvents = 'all';
+                    // Add click handler to show zoomed image
+                    img.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showZoomedImage(img);
+                    });
                     wrap.append(img);
                     if (geVerboseLogging) log('created wrapper for', name, 'src', img.src);
                 }
@@ -780,6 +862,9 @@ const end = ()=>{
     rightArea = null;
     root?.remove();
     root = null;
+    // cleanup modal overlay if it exists
+    modalOverlay?.remove();
+    modalOverlay = null;
     while (imgs.length > 0) {
         imgs.pop();
     }

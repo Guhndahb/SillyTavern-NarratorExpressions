@@ -30,6 +30,14 @@
   width: auto !important;
   object-fit: contain;
   display: block;
+  cursor: pointer;
+  pointer-events: all;
+  transition: opacity 0.2s ease;
+}
+
+/* Hover effect for images */
+.stne--img:hover {
+  opacity: 0.85;
 }
 
 /* --- CORNER POSITIONS --- */
@@ -334,4 +342,39 @@
 .stne--root[style*="--placement-mode: center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order: 3"],
 .stne--root[style*="--placement-mode:center"][data-visible-count="4"] .stne--area .stne--wrapper[style*="--order:3"] {
   height: calc(50vh - 0.5px) !important;
+}
+
+/* --- MODAL OVERLAY FOR ZOOMED IMAGE --- */
+.stne--modal-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.stne--modal-img {
+  max-width: 95vw;
+  max-height: 95vh;
+  object-fit: contain;
+  cursor: pointer;
+  animation: stne-zoom-in 0.2s ease;
+}
+
+@keyframes stne-zoom-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
