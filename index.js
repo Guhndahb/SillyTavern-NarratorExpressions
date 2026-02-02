@@ -146,6 +146,72 @@ function countOccurrencesOutsideBrackets(name, nonBracketSpans) {
 }
 
 /**
+ * parseMemberInput(inputStr)
+ * - Parses the custom member list input string, supporting both single names
+ *   and parenthesized groups of aliases.
+ * - Single name:  "Alice"                -> primary "Alice", aliases ["Alice"]
+ * - Group:        "(Barry, Dr. Bindle)"  -> primary "Barry", aliases ["Barry","Dr. Bindle"]
+ * - Returns { primaryNames: string[], aliasGroups: { [primary]: string[] } }
+ */
+function parseMemberInput(inputStr) {
+    const primaryNames = [];
+    const groups = {};
+    if (!inputStr || !inputStr.trim()) return { primaryNames, aliasGroups: groups };
+
+    let i = 0;
+    const len = inputStr.length;
+    while (i < len) {
+        // Skip whitespace and commas between entries
+        while (i < len && (inputStr[i] === ',' || inputStr[i] === ' ')) i++;
+        if (i >= len) break;
+
+        if (inputStr[i] === '(') {
+            // Parse parenthesized group
+            i++; // skip '('
+            const closeIdx = inputStr.indexOf(')', i);
+            const groupStr = closeIdx === -1 ? inputStr.slice(i) : inputStr.slice(i, closeIdx);
+            const names = groupStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            if (names.length > 0) {
+                const primary = names[0];
+                primaryNames.push(primary);
+                groups[primary] = names;
+            }
+            i = closeIdx === -1 ? len : closeIdx + 1;
+        } else {
+            // Parse single name until comma or opening parenthesis
+            let end = i;
+            while (end < len && inputStr[end] !== ',' && inputStr[end] !== '(') end++;
+            const name = inputStr.slice(i, end).trim();
+            if (name.length > 0) {
+                primaryNames.push(name);
+                groups[name] = [name];
+            }
+            i = end;
+        }
+    }
+    return { primaryNames, aliasGroups: groups };
+}
+
+/**
+ * updateAliasGroups()
+ * - Rebuilds the module-level aliasGroups map from csettings.
+ * - If membersRaw is stored (new format), parses it and also updates csettings.members.
+ * - Otherwise falls back to treating each member as its own group (backward compat).
+ */
+function updateAliasGroups() {
+    if (csettings?.membersRaw) {
+        const parsed = parseMemberInput(csettings.membersRaw);
+        csettings.members = parsed.primaryNames;
+        aliasGroups = parsed.aliasGroups;
+    } else if (csettings?.members?.length) {
+        aliasGroups = {};
+        csettings.members.forEach(m => { aliasGroups[m] = [m]; });
+    } else {
+        aliasGroups = {};
+    }
+}
+
+/**
  * getPresentOrderedNames(lastMes, nameList)
  * - Returns ordered array of names present in lastMes according to occurrences outside bracket spans.
  * - Tie-break: descending count, then earliest unbracketed occurrence index, then master nameList index.
@@ -171,9 +237,18 @@ async function getPresentOrderedNames(lastMes, nameList) {
     const perNameDebug = [];
     for (let i = 0; i < nameList.length; i++) {
         const name = nameList[i];
-        const { count, firstIndex } = countOccurrencesOutsideBrackets(name, nonBracketSpans);
-        perNameDebug.push({ name, count, firstIndex, excluded: false });
-        if (count > 0) items.push({ name, count, firstIndex, masterIndex: i });
+        const aliases = aliasGroups[name] || [name];
+        let totalCount = 0;
+        let earliestIndex = null;
+        for (const alias of aliases) {
+            const { count, firstIndex } = countOccurrencesOutsideBrackets(alias, nonBracketSpans);
+            totalCount += count;
+            if (firstIndex !== null && (earliestIndex === null || firstIndex < earliestIndex)) {
+                earliestIndex = firstIndex;
+            }
+        }
+        perNameDebug.push({ name, count: totalCount, firstIndex: earliestIndex, excluded: false, aliases: aliases.length > 1 ? aliases : undefined });
+        if (totalCount > 0) items.push({ name, count: totalCount, firstIndex: earliestIndex, masterIndex: i });
     }
     // Debug log: per-name counts before sorting
     if (enableVerboseLogging) log('perNameCounts', perNameDebug);
@@ -265,6 +340,8 @@ let rightArea; // DOM container covering right empty side-space
 let imgs = [];
 /**@type {String[]} */
 let nameList = [];
+/**@type {Object<string, string[]>} primary name -> [all aliases including self] */
+let aliasGroups = {};
 /**@type {String} */
 let current;
 /**@type {Boolean} */
@@ -420,8 +497,8 @@ const initSettings = () => {
                 </div>
                 <div class="flex-container">
                     <label>
-                        Custom character list <small>(comma separated list of names, <strong>saved in chat</strong>)</small>
-                        <input type="text" class="text_pole" id="stne--members" placeholder="Alice, Bob, Carol" value="" disabled>
+                        Custom character list <small>(comma separated names or (alias groups), <strong>saved in chat</strong>)</small>
+                        <input type="text" class="text_pole" id="stne--members" placeholder="Alice, (Bob, Bobby), Carol" value="" disabled>
                     </label>
                 </div>
                 <div class="flex-container">
@@ -481,7 +558,8 @@ const initSettings = () => {
         saveMetadataDebounced();
     });
     document.querySelector('#stne--members').addEventListener('input', ()=>{
-        csettings.members = document.querySelector('#stne--members').value.split(/\s*,\s*/).filter(it=>it.length);
+        csettings.membersRaw = document.querySelector('#stne--members').value;
+        updateAliasGroups();
         chat_metadata.groupExpressions = csettings;
         saveMetadataDebounced();
     });
@@ -591,8 +669,9 @@ const chatChanged = async ()=>{
     const membersEl = document.querySelector('#stne--members');
     if (membersEl) {
         membersEl.disabled = context.chatId == null;
-        membersEl.value = csettings.members?.join(', ') ?? '';
+        membersEl.value = csettings.membersRaw ?? csettings.members?.join(', ') ?? '';
     }
+    updateAliasGroups();
     await restart();
 };
 
@@ -815,14 +894,21 @@ const getOrder = (members)=>{
 const getOrderFromText = (members)=>{
     members = [...members];
     const o = [];
-    const regex = members.map(it=>[it, new RegExp(`(?:^|\\W)(${escapeRegex(it)})(?:$|\\W)`)]).reduce((dict,cur)=>(dict[cur[0]] = cur[1], dict), {});
     const mesList = chat.filter(it=>!it.is_system && !it.is_user).toReversed();
     for (const mes of mesList) {
         const mesmem = [];
         for (const m of members) {
-            if (regex[m].test(mes.mes)) {
-                const match = regex[m].exec(mes.mes);
-                mesmem.push([m, match]);
+            const aliases = aliasGroups[m] || [m];
+            let bestMatch = null;
+            for (const alias of aliases) {
+                const rx = new RegExp(`(?:^|\\W)(${escapeRegex(alias)})(?:$|\\W)`);
+                const match = rx.exec(mes.mes);
+                if (match && (bestMatch === null || match.index < bestMatch.index)) {
+                    bestMatch = match;
+                }
+            }
+            if (bestMatch) {
+                mesmem.push([m, bestMatch]);
             }
         }
         mesmem.sort((a,b)=>a[1].index - b[1].index);
