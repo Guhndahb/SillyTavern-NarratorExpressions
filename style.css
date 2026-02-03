@@ -11,6 +11,9 @@
   pointer-events: none; /* Allows clicking through to the app */
   background: transparent;
   display: block;
+  /* Pulse magnitude when a name/alias is re-mentioned during streaming.
+     Adjust this value to control scale intensity (1.0 = no pulse, 1.15 = strong). */
+  --ne-pulse-scale: 1.08;
 }
 
 /* ============================================================================
@@ -372,4 +375,16 @@
     transform: scale(1);
     opacity: 1;
   }
+}
+
+/* ============================================================================
+   NAME PULSE - Triggered when a name/alias gets an additional mention during streaming
+   ============================================================================ */
+@keyframes stne-name-pulse {
+  0%, 100% { scale: 1; }
+  50% { scale: var(--ne-pulse-scale, 1.08); }
+}
+
+.stne--name-pulse .stne--img {
+  animation: stne-name-pulse 0.4s ease-in-out;
 }

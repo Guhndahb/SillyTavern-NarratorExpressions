@@ -346,6 +346,8 @@ let aliasGroups = {};
 let current;
 /**@type {Boolean} */
 let busy = false;
+/**@type {Object<string, number>} Tracks name occurrence counts between render iterations for pulse detection */
+let previousNameCounts = {};
 /**@type {HTMLElement} */
 let modalOverlay; // Modal overlay for zoomed image view
 
@@ -705,6 +707,20 @@ const messageRendered = async () => {
             // expose how many images are visible so CSS can adapt layouts for 1/2/3 images
             if (root) root.setAttribute('data-visible-count', String(Math.max(0, Math.min(4, slots.length))));
 
+            // Compute current occurrence counts for pulse detection
+            const pulseText = lastMes?.mes ?? lastMes?.message ?? lastMes?.text ?? '';
+            const pulseSpans = getNonBracketSpans(pulseText).map(s => ({ ...s, text: pulseText.slice(s.start, s.end) }));
+            const currentNameCounts = {};
+            for (const name of nameList) {
+                const aliases = aliasGroups[name] || [name];
+                let totalCount = 0;
+                for (const alias of aliases) {
+                    const { count } = countOccurrencesOutsideBrackets(alias, pulseSpans);
+                    totalCount += count;
+                }
+                currentNameCounts[name] = totalCount;
+            }
+
             // debug: print slots and wrapper state when verbose logging is enabled
             if (enableVerboseLogging) {
                 try {
@@ -776,6 +792,21 @@ const messageRendered = async () => {
                     if (wrap) wrap.classList.add('stne--last');
                 }
             }
+
+            // Pulse detection: trigger scale animation when a name's unbracketed count increases during streaming
+            for (const name of slots) {
+                const prev = previousNameCounts[name] || 0;
+                const curr = currentNameCounts[name] || 0;
+                if (curr > prev && prev > 0) {
+                    const wrapper = imgs.find(it => it.getAttribute('data-character') === name);
+                    if (wrapper && wrapper.closest('.stne--root')) {
+                        wrapper.classList.remove('stne--name-pulse');
+                        void wrapper.offsetWidth; // force reflow to restart animation
+                        wrapper.classList.add('stne--name-pulse');
+                    }
+                }
+            }
+            previousNameCounts = { ...currentNameCounts };
         }
         await delay(1000);
     }
@@ -1003,6 +1034,7 @@ const end = ()=>{
     // cleanup modal overlay if it exists
     modalOverlay?.remove();
     modalOverlay = null;
+    previousNameCounts = {};
     while (imgs.length > 0) {
         imgs.pop();
     }
