@@ -13,7 +13,7 @@
   display: block;
   /* Pulse magnitude when a name/alias is re-mentioned during streaming.
      Adjust this value to control scale intensity (1.0 = no pulse, 1.15 = strong). */
-  --ne-pulse-scale: 1.08;
+  --ne-pulse-scale: 1.01;
 }
 
 /* ============================================================================
